@@ -142,7 +142,7 @@
    </div>
    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
-     <h3 class="text-2xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อ���ูล</h3>
+     <h3 class="text-2xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อมูล</h3>
      <form id="edit-form" class="space-y-4"><input type="hidden" id="edit-field">
       <div><label for="edit-value" class="block text-sm font-semibold text-gray-700 mb-1" id="edit-label">ค่า</label> <input type="number" id="edit-value" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
       </div>
@@ -402,7 +402,7 @@
       const fieldLabels = {
         base_salary: 'เงินเดือนฐาน',
         overtime: 'โอที',
-        sales_percent: 'เปอร์เซ็นข��ย',
+        sales_percent: 'เปอร์เซ็นขาย',
         cases_completed: 'จบเคส',
         uniform_cost: 'ค่าชุด',
         training_cost: 'ค่าเรียน',
@@ -481,7 +481,7 @@
       
       const addBtn = document.getElementById('add-btn');
       addBtn.disabled = true;
-      addBtn.textContent = 'กำ��ังเพ���่ม...';
+      addBtn.textContent = 'กำลังเพิ่ม...';
       
       const newEmployee = {
         employee_name: name,
@@ -674,7 +674,7 @@
         <body>
           <h1>รายงานกะพนักงาน</h1>
           <div class="report-info">
-            <p><strong>เดือน:</strong> ${monthNames[currentMonth]} (${daysInMonth} วัน) | <strong>ว���นที่พิมพ์:</strong> ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p><strong>เดือน:</strong> ${monthNames[currentMonth]} (${daysInMonth} วัน) | <strong>วันที่พิมพ์:</strong> ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
           
           <table>
