@@ -86,7 +86,7 @@
    <div class="p-6 min-h-full">
     <header class="mb-6">
      <h1 id="app-title" class="text-4xl font-bold text-blue-900 mb-2">ระบบลงทะเบียนกะพนักงาน</h1>
-     <p id="instruction-text" class="text-blue-700">กดที่เซลล์เพื่อเลือกกะ D (กลางวัน) หรือ N (กลางคืน)</p>
+     <p id="instruction-text" class="text-blue-700">���ดที่เซลล�����เพื่อเลือก���ะ D (กลางวัน) หรือ N (กลางคืน)</p>
     </header>
     <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
      <div class="flex justify-between items-center mb-4">
@@ -104,6 +104,9 @@
      </form>
     </div>
     <div class="bg-white rounded-lg shadow-lg p-6">
+     <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold text-blue-900">รายชื่อพนักงาน</h2><button id="print-report-btn" class="action-btn bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"> 📊 ออกรายงาน </button>
+     </div>
      <div id="table-container" class="table-wrapper">
       <table class="w-full text-sm">
        <thead>
@@ -139,7 +142,7 @@
    </div>
    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
-     <h3 class="text-2xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อมูล</h3>
+     <h3 class="text-2xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อ���ูล</h3>
      <form id="edit-form" class="space-y-4"><input type="hidden" id="edit-field">
       <div><label for="edit-value" class="block text-sm font-semibold text-gray-700 mb-1" id="edit-label">ค่า</label> <input type="number" id="edit-value" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
       </div>
@@ -399,7 +402,7 @@
       const fieldLabels = {
         base_salary: 'เงินเดือนฐาน',
         overtime: 'โอที',
-        sales_percent: 'เปอร์เซ็นขาย',
+        sales_percent: 'เปอร์เซ็นข��ย',
         cases_completed: 'จบเคส',
         uniform_cost: 'ค่าชุด',
         training_cost: 'ค่าเรียน',
@@ -478,7 +481,7 @@
       
       const addBtn = document.getElementById('add-btn');
       addBtn.disabled = true;
-      addBtn.textContent = 'กำลังเพิ่ม...';
+      addBtn.textContent = 'กำ��ังเพ���่ม...';
       
       const newEmployee = {
         employee_name: name,
@@ -543,6 +546,305 @@
       generateDaysHeader();
       renderEmployeeTable();
     });
+
+    document.getElementById('print-report-btn').addEventListener('click', () => {
+      const monthNames = [
+        '', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+      ];
+      
+      const printWindow = window.open('', '', 'width=1200,height=800');
+      
+      const reportHTML = `
+        <!DOCTYPE html>
+        <html lang="th">
+        <head>
+          <meta charset="UTF-8">
+          <title>รายงานกะพนักงาน - ${monthNames[currentMonth]} (${daysInMonth} วัน)</title>
+          <style>
+            body {
+              font-family: 'Sarabun', 'Arial', sans-serif;
+              padding: 20px;
+              font-size: 12px;
+            }
+            
+            h1 {
+              text-align: center;
+              color: #1e3a8a;
+              margin-bottom: 10px;
+              font-size: 24px;
+            }
+            
+            .report-info {
+              text-align: center;
+              margin-bottom: 20px;
+              color: #666;
+              font-size: 14px;
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            
+            th, td {
+              border: 1px solid #333;
+              padding: 6px 4px;
+              text-align: left;
+            }
+            
+            th {
+              background-color: #1e3a8a;
+              color: white;
+              font-weight: bold;
+              font-size: 11px;
+            }
+            
+            td {
+              font-size: 11px;
+            }
+            
+            .text-right {
+              text-align: right;
+            }
+            
+            .text-center {
+              text-align: center;
+            }
+            
+            .shift-d {
+              background-color: #fef3c7;
+              color: #92400e;
+              font-weight: bold;
+            }
+            
+            .shift-n {
+              background-color: #dbeafe;
+              color: #1e40af;
+              font-weight: bold;
+            }
+            
+            .total-row {
+              background-color: #f3f4f6;
+              font-weight: bold;
+            }
+            
+            .positive {
+              color: #059669;
+            }
+            
+            .negative {
+              color: #dc2626;
+            }
+            
+            .summary {
+              margin-top: 30px;
+              padding: 15px;
+              background-color: #f3f4f6;
+              border-radius: 8px;
+            }
+            
+            .summary h2 {
+              color: #1e3a8a;
+              margin-bottom: 10px;
+              font-size: 18px;
+            }
+            
+            @media print {
+              body {
+                padding: 10px;
+              }
+              
+              table {
+                page-break-inside: auto;
+              }
+              
+              tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+              }
+              
+              thead {
+                display: table-header-group;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>รายงานกะพนักงาน</h1>
+          <div class="report-info">
+            <p><strong>เดือน:</strong> ${monthNames[currentMonth]} (${daysInMonth} วัน) | <strong>ว���นที่พิมพ์:</strong> ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px;">ลำดับ</th>
+                <th style="width: 150px;">ชื่อ-นามสกุล</th>
+                <th class="text-right" style="width: 80px;">เงินเดือน</th>
+                <th class="text-right" style="width: 70px;">ค่าจ้าง/วัน</th>
+                <th class="text-right" style="width: 50px;">จำนวนเวร</th>
+                <th class="text-right" style="width: 80px;">รวมค่าจ้าง</th>
+                <th class="text-right" style="width: 70px;">โอที</th>
+                <th class="text-right" style="width: 40px;">หยุด</th>
+                <th class="text-right" style="width: 70px;">%ขาย</th>
+                <th class="text-right" style="width: 70px;">จบเคส</th>
+                <th class="text-right" style="width: 70px;">ค่าชุด</th>
+                <th class="text-right" style="width: 70px;">ค่าเรียน</th>
+                <th class="text-right" style="width: 70px;">ค่าน้ำ/ไฟ</th>
+                <th class="text-right" style="width: 70px;">ผิดกฏ</th>
+                <th class="text-right" style="width: 70px;">อื่นๆ</th>
+                <th class="text-right" style="width: 90px;">คงเหลือ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${generateReportRows()}
+            </tbody>
+            <tfoot>
+              ${generateTotalRow()}
+            </tfoot>
+          </table>
+          
+          ${generateSummary()}
+          
+          <div style="margin-top: 50px; text-align: right;">
+            <p>ลงชื่อ: ________________________</p>
+            <p style="margin-top: 5px;">(ผู้จัดทำรายงาน)</p>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      printWindow.document.write(reportHTML);
+      printWindow.document.close();
+      
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    });
+
+    function generateReportRows() {
+      return employees.map((emp, index) => {
+        const shifts = parseShifts(emp.shifts);
+        const shiftCount = calculateShiftCount(shifts);
+        const daysOff = calculateDaysOff(shifts);
+        const dailyRate = calculateDailyRate(emp.base_salary || 0);
+        const totalWage = calculateTotalWage(emp.base_salary || 0, shiftCount);
+        const remaining = calculateRemaining(emp, shiftCount);
+        
+        return `
+          <tr>
+            <td class="text-center">${index + 1}</td>
+            <td>${emp.employee_name}</td>
+            <td class="text-right">${(emp.base_salary || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${dailyRate.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right"><strong>${shiftCount}</strong></td>
+            <td class="text-right"><strong>${totalWage.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+            <td class="text-right">${(emp.overtime || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${daysOff}</td>
+            <td class="text-right">${(emp.sales_percent || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${(emp.cases_completed || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${(emp.uniform_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${(emp.training_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${(emp.utilities_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${(emp.violation_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right">${(emp.other_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+            <td class="text-right ${remaining >= 0 ? 'positive' : 'negative'}"><strong>${remaining.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function generateTotalRow() {
+      let totalBaseSalary = 0;
+      let totalShifts = 0;
+      let totalWages = 0;
+      let totalOvertime = 0;
+      let totalDaysOff = 0;
+      let totalSales = 0;
+      let totalCases = 0;
+      let totalUniform = 0;
+      let totalTraining = 0;
+      let totalUtilities = 0;
+      let totalViolation = 0;
+      let totalOther = 0;
+      let totalRemaining = 0;
+      
+      employees.forEach(emp => {
+        const shifts = parseShifts(emp.shifts);
+        const shiftCount = calculateShiftCount(shifts);
+        const totalWage = calculateTotalWage(emp.base_salary || 0, shiftCount);
+        
+        totalBaseSalary += emp.base_salary || 0;
+        totalShifts += shiftCount;
+        totalWages += totalWage;
+        totalOvertime += emp.overtime || 0;
+        totalDaysOff += calculateDaysOff(shifts);
+        totalSales += emp.sales_percent || 0;
+        totalCases += emp.cases_completed || 0;
+        totalUniform += emp.uniform_cost || 0;
+        totalTraining += emp.training_cost || 0;
+        totalUtilities += emp.utilities_cost || 0;
+        totalViolation += emp.violation_cost || 0;
+        totalOther += emp.other_cost || 0;
+        totalRemaining += calculateRemaining(emp, shiftCount);
+      });
+      
+      return `
+        <tr class="total-row">
+          <td colspan="2" class="text-center"><strong>รวมทั้งหมด</strong></td>
+          <td class="text-right"><strong>${totalBaseSalary.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right">-</td>
+          <td class="text-right"><strong>${totalShifts}</strong></td>
+          <td class="text-right"><strong>${totalWages.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalOvertime.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalDaysOff}</strong></td>
+          <td class="text-right"><strong>${totalSales.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalCases.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalUniform.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalTraining.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalUtilities.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalViolation.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right"><strong>${totalOther.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+          <td class="text-right ${totalRemaining >= 0 ? 'positive' : 'negative'}"><strong>${totalRemaining.toLocaleString('th-TH', {minimumFractionDigits: 2})}</strong></td>
+        </tr>
+      `;
+    }
+
+    function generateSummary() {
+      const totalEmployees = employees.length;
+      let totalShifts = 0;
+      let totalWages = 0;
+      let totalIncome = 0;
+      let totalDeductions = 0;
+      
+      employees.forEach(emp => {
+        const shifts = parseShifts(emp.shifts);
+        const shiftCount = calculateShiftCount(shifts);
+        const totalWage = calculateTotalWage(emp.base_salary || 0, shiftCount);
+        
+        totalShifts += shiftCount;
+        totalWages += totalWage;
+        totalIncome += totalWage + (emp.overtime || 0) + (emp.sales_percent || 0) + (emp.cases_completed || 0);
+        totalDeductions += (emp.uniform_cost || 0) + (emp.training_cost || 0) + (emp.utilities_cost || 0) + (emp.violation_cost || 0) + (emp.other_cost || 0);
+      });
+      
+      const avgShiftsPerEmployee = totalEmployees > 0 ? (totalShifts / totalEmployees).toFixed(2) : 0;
+      const netPayroll = totalIncome - totalDeductions;
+      
+      return `
+        <div class="summary">
+          <h2>สรุปภาพรวม</h2>
+          <p><strong>จำนวนพนักงานทั้งหมด:</strong> ${totalEmployees} คน</p>
+          <p><strong>จำนวนเวรทั้งหมด:</strong> ${totalShifts} เวร (เฉลี่ย ${avgShiftsPerEmployee} เวร/คน)</p>
+          <p><strong>รวมค่าจ้างพื้นฐาน:</strong> ${totalWages.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท</p>
+          <p><strong>รวมรายได้ทั้งหมด:</strong> ${totalIncome.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท</p>
+          <p><strong>รวมค่าใช้จ่าย:</strong> ${totalDeductions.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท</p>
+          <p><strong>คงเหลือสุทธิ:</strong> <span class="${netPayroll >= 0 ? 'positive' : 'negative'}">${netPayroll.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท</span></p>
+        </div>
+      `;
+    }
 
     async function initApp() {
       const now = new Date();
@@ -615,5 +917,5 @@
 
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9adb742a603737db',t:'MTc2NTY5MTc0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9adb843c5479d01a',t:'MTc2NTY5MjQwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
