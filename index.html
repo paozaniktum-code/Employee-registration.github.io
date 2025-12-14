@@ -4,194 +4,117 @@
   <meta charset="UTF-8" />
   <title>ระบบลงทะเบียนกะพนักงาน</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Excel Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 p-4">
 
 <div class="max-w-7xl mx-auto bg-white shadow rounded-xl p-4">
 
-  <!-- Header -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+  <!-- NAV -->
+  <div class="flex justify-between items-center mb-4">
     <h1 class="text-xl font-bold">📋 ระบบลงทะเบียนกะพนักงาน</h1>
-
     <div class="flex gap-2">
-      <button id="export-btn" data-admin-only
-        class="px-4 py-2 bg-green-600 text-white rounded-lg">Export Excel</button>
+      <button onclick="showPage('list')" class="px-3 py-2 bg-gray-200 rounded">ดูข้อมูล</button>
+      <button onclick="showPage('add')" class="px-3 py-2 bg-blue-600 text-white rounded">เพิ่มพนักงาน</button>
+      <button id="export-btn" class="px-3 py-2 bg-green-600 text-white rounded">Export Excel</button>
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="overflow-x-auto">
-    <table class="min-w-full border text-sm">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="border px-2">ชื่อ</th>
-          <th class="border px-2">D Rate</th>
-          <th class="border px-2">N Rate</th>
-          <th class="border px-2">เวร</th>
-          <th class="border px-2">ค่าแรง</th>
-          <th class="border px-2">คงเหลือ</th>
-        </tr>
-      </thead>
-      <tbody id="employee-body"></tbody>
-    </table>
+  <!-- PAGE: LIST -->
+  <div id="page-list">
+    <div class="overflow-x-auto">
+      <table class="min-w-full border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border px-2">ชื่อ</th>
+            <th class="border px-2">D Rate</th>
+            <th class="border px-2">N Rate</th>
+            <th class="border px-2">เวร</th>
+            <th class="border px-2">ค่าแรง</th>
+            <th class="border px-2">คงเหลือ</th>
+            <th class="border px-2">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="employee-body"></tbody>
+      </table>
+    </div>
+    <div id="monthly-summary" class="mt-4 font-semibold"></div>
   </div>
 
-  <!-- Monthly Summary -->
-  <div id="monthly-summary" class="mt-4 text-sm font-semibold"></div>
+  <!-- PAGE: ADD -->
+  <div id="page-add" class="hidden">
+    <div class="grid md:grid-cols-2 gap-4">
+      <input id="name" placeholder="ชื่อพนักงาน" class="border p-2 rounded" />
+      <input id="rateD" type="number" placeholder="ค่าแรง D" class="border p-2 rounded" />
+      <input id="rateN" type="number" placeholder="ค่าแรง N" class="border p-2 rounded" />
+      <input id="shifts" placeholder="เวร เช่น D,N,D,,N" class="border p-2 rounded md:col-span-2" />
+    </div>
+    <button onclick="addEmployee()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">บันทึก</button>
+  </div>
 
 </div>
 
 <script>
-/**********************
- * AUTH / ROLE
- **********************/
-const currentUser = { username: 'admin', role: 'admin' }; // admin | user
-const isAdmin = () => currentUser.role === 'admin';
+let employees = JSON.parse(localStorage.getItem('employees')) || [];
 
-function applyPermission() {
-  document.querySelectorAll('[data-admin-only]').forEach(el => {
-    el.disabled = !isAdmin();
-    el.classList.toggle('opacity-50', !isAdmin());
-  });
+function save(){ localStorage.setItem('employees', JSON.stringify(employees)); }
+
+function showPage(page){
+  document.getElementById('page-list').classList.toggle('hidden', page !== 'list');
+  document.getElementById('page-add').classList.toggle('hidden', page !== 'add');
 }
 
-/**********************
- * DATA
- **********************/
-let employees = JSON.parse(localStorage.getItem('employees')) || [
-  {
-    id: 1,
-    employee_name: 'สมชาย',
-    day_rate_d: 500,
-    day_rate_n: 700,
-    shifts: 'D,N,D,,N',
-    overtime: 0,
-    sales_percent: 0,
-    cases_completed: 0,
-    uniform_cost: 0,
-    training_cost: 0,
-    utilities_cost: 0,
-    violation_cost: 0,
-    other_cost: 0
-  }
-];
+function parseShifts(s){ return s.split(','); }
+function calculateShiftCount(sh){ return sh.filter(x=>x==='D'||x==='N').length; }
+function calculateTotalWage(sh,d,n){ return sh.reduce((sum,x)=>x==='D'?sum+d:x==='N'?sum+n:sum,0); }
+function calculateRemaining(emp,sh){ return calculateTotalWage(sh,emp.day_rate_d,emp.day_rate_n); }
 
-function save() {
-  localStorage.setItem('employees', JSON.stringify(employees));
-}
-
-/**********************
- * SHIFT UTILS
- **********************/
-function parseShifts(str) {
-  return str.split(',');
-}
-
-function calculateShiftCount(shifts) {
-  return shifts.filter(s => s === 'D' || s === 'N').length;
-}
-
-function calculateTotalWage(shifts, rateD, rateN) {
-  return shifts.reduce((sum, s) => {
-    if (s === 'D') return sum + rateD;
-    if (s === 'N') return sum + rateN;
-    return sum;
-  }, 0);
-}
-
-function calculateRemaining(emp, shifts) {
-  const wage = calculateTotalWage(shifts, emp.day_rate_d, emp.day_rate_n);
-  const income = wage + emp.overtime + emp.sales_percent + emp.cases_completed;
-  const deductions = emp.uniform_cost + emp.training_cost + emp.utilities_cost + emp.violation_cost + emp.other_cost;
-  return income - deductions;
-}
-
-/**********************
- * SUMMARY
- **********************/
-function calculateEmployeeSummary(emp) {
-  const shifts = parseShifts(emp.shifts);
-  return {
-    shifts: calculateShiftCount(shifts),
-    wage: calculateTotalWage(shifts, emp.day_rate_d, emp.day_rate_n),
-    net: calculateRemaining(emp, shifts)
-  };
-}
-
-function calculateMonthlySummary(list) {
-  return list.reduce((sum, emp) => {
-    const s = calculateEmployeeSummary(emp);
-    sum.shifts += s.shifts;
-    sum.wage += s.wage;
-    sum.net += s.net;
-    return sum;
-  }, { shifts: 0, wage: 0, net: 0 });
-}
-
-/**********************
- * RENDER
- **********************/
-function render() {
-  const tbody = document.getElementById('employee-body');
-  tbody.innerHTML = '';
-
-  employees.forEach(emp => {
-    const shifts = parseShifts(emp.shifts);
-    const wage = calculateTotalWage(shifts, emp.day_rate_d, emp.day_rate_n);
-    const net = calculateRemaining(emp, shifts);
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="border px-2">${emp.employee_name}</td>
-      <td class="border px-2 text-right">${emp.day_rate_d}</td>
-      <td class="border px-2 text-right">${emp.day_rate_n}</td>
-      <td class="border px-2 text-center">${calculateShiftCount(shifts)}</td>
-      <td class="border px-2 text-right text-green-600">${wage.toLocaleString()}</td>
-      <td class="border px-2 text-right font-bold">${net.toLocaleString()}</td>
-    `;
+function render(){
+  const tbody=document.getElementById('employee-body'); tbody.innerHTML='';
+  employees.forEach((e,i)=>{
+    const sh=parseShifts(e.shifts);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="border px-2">${e.employee_name}</td>
+      <td class="border px-2 text-right">${e.day_rate_d}</td>
+      <td class="border px-2 text-right">${e.day_rate_n}</td>
+      <td class="border px-2 text-center">${calculateShiftCount(sh)}</td>
+      <td class="border px-2 text-right">${calculateTotalWage(sh,e.day_rate_d,e.day_rate_n)}</td>
+      <td class="border px-2 text-right">${calculateRemaining(e,sh)}</td>
+      <td class="border px-2 text-center">
+        <button onclick="removeEmployee(${i})" class="text-red-600">ลบ</button>
+      </td>`;
     tbody.appendChild(tr);
   });
-
-  const summary = calculateMonthlySummary(employees);
-  document.getElementById('monthly-summary').innerText =
-    `รวมเวร: ${summary.shifts} | ค่าแรงรวม: ${summary.wage.toLocaleString()} | จ่ายสุทธิ: ${summary.net.toLocaleString()}`;
-
-  applyPermission();
+  document.getElementById('monthly-summary').innerText = `พนักงานทั้งหมด ${employees.length} คน`;
 }
 
-/**********************
- * EXCEL EXPORT
- **********************/
-function exportExcel() {
-  const data = employees.map((emp, i) => {
-    const shifts = parseShifts(emp.shifts);
-    return {
-      ลำดับ: i + 1,
-      ชื่อ: emp.employee_name,
-      เวร: calculateShiftCount(shifts),
-      ค่าแรง: calculateTotalWage(shifts, emp.day_rate_d, emp.day_rate_n),
-      คงเหลือ: calculateRemaining(emp, shifts)
-    };
+function addEmployee(){
+  employees.push({
+    employee_name: name.value,
+    day_rate_d: +rateD.value,
+    day_rate_n: +rateN.value,
+    shifts: shifts.value
   });
-
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Payroll');
-  XLSX.writeFile(wb, 'payroll.xlsx');
+  save(); render(); showPage('list');
 }
 
-/**********************
- * INIT
- **********************/
-document.getElementById('export-btn').onclick = exportExcel;
+function removeEmployee(i){ if(confirm('ลบพนักงาน?')){ employees.splice(i,1); save(); render(); } }
+
+function exportExcel(){
+  const data=employees.map((e,i)=>({
+    ลำดับ:i+1,ชื่อ:e.employee_name,เวร:calculateShiftCount(parseShifts(e.shifts)),
+    ค่าแรง:calculateTotalWage(parseShifts(e.shifts),e.day_rate_d,e.day_rate_n)
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Payroll');
+  XLSX.writeFile(wb,'payroll.xlsx');
+}
+
+document.getElementById('export-btn').onclick=exportExcel;
 render();
 </script>
-
 </body>
 </html>
