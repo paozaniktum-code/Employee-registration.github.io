@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="th" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบลงทะเบียนกะพนักงาน</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .shift-cell {
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    
+    .shift-cell:hover {
+      transform: scale(1.05);
+    }
+    
+    .shift-d {
+      background-color: #fef3c7;
+      color: #92400e;
+      font-weight: 600;
+    }
+    
+    .shift-n {
+      background-color: #dbeafe;
+      color: #1e40af;
+      font-weight: 600;
+    }
+    
+    .shift-empty {
+      background-color: #f3f4f6;
+      color: #9ca3af;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: calc(100% - 180px);
+    }
+    
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    
+    th {
+      position: sticky;
+      top: 0;
+      background-color: #1e3a8a;
+      z-index: 10;
+    }
+    
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background-color: white;
+    }
+    
+    th:first-child {
+      z-index: 15;
+      background-color: #1e3a8a;
+    }
+    
+    .action-btn {
+      transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full">
+  <div class="h-full w-full bg-gradient-to-br from-blue-50 to-indigo-100 overflow-auto">
+   <div class="p-6 min-h-full">
+    <header class="mb-6">
+     <h1 id="app-title" class="text-4xl font-bold text-blue-900 mb-2">ระบบลงทะเบียนกะพนักงาน</h1>
+     <p id="instruction-text" class="text-blue-700">กดที่เซลล์เพื่อเลือก���ะ D (กลางวัน) หรือ N (กลางคืน)</p>
+    </header>
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+     <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold text-blue-900">เพิ่มพนักงานใหม่</h2>
+      <div class="flex items-center gap-3"><label for="month-select" class="text-sm font-semibold text-gray-700">เดือน:</label> <select id="month-select" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold"> <option value="1">มกราคม (31 วัน)</option> <option value="2">กุมภาพันธ์ (28 วัน)</option> <option value="3">มีนาคม (31 วัน)</option> <option value="4">เมษายน (30 วัน)</option> <option value="5">พฤษภาคม (31 วัน)</option> <option value="6">มิถุนายน (30 วัน)</option> <option value="7">กรกฎาคม (31 วัน)</option> <option value="8">สิงหาคม (31 วัน)</option> <option value="9">กันยายน (30 วัน)</option> <option value="10">ตุลาคม (31 วัน)</option> <option value="11">พฤศจิกายน (30 วัน)</option> <option value="12">ธันวาคม (31 วัน)</option> </select>
+      </div>
+     </div>
+     <form id="add-employee-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div><label for="employee-name" class="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล</label> <input type="text" id="employee-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+       </div>
+       <div><label for="base-salary" class="block text-sm font-semibold text-gray-700 mb-1">เงินเดือนฐาน (บาท)</label> <input type="number" id="base-salary" required min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+       </div>
+      </div><button type="submit" id="add-btn" class="action-btn bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"> เพิ่มพนักงาน </button>
+     </form>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-6">
+     <div id="table-container" class="table-wrapper">
+      <table class="w-full text-sm">
+       <thead>
+        <tr>
+         <th class="px-4 py-3 text-left text-white font-semibold border border-blue-800">ลำดับ</th>
+         <th class="px-4 py-3 text-left text-white font-semibold border border-blue-800">ชื่อ-นามสกุล</th>
+         <th class="px-2 py-3 text-center text-white font-semibold border border-blue-800" id="days-header"></th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">เงินเดือน</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าจ้าง/วัน</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">จำนวนเวร</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">รวมค่าจ้าง</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">โอที</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">หยุด</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">%ขาย</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">จบเคส</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าชุด</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าเรียน</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าน้ำ/ไฟ</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ผิดกฏ</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">อื่นๆ</th>
+         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">คงเหลือ</th>
+         <th class="px-4 py-3 text-center text-white font-semibold border border-blue-800">จัดการ</th>
+        </tr>
+       </thead>
+       <tbody id="employee-tbody">
+       </tbody>
+      </table>
+     </div>
+     <div id="empty-state" class="text-center py-12 text-gray-500">
+      <p class="text-lg">ยังไม่มีพนักงานในระบบ กรุณาเพิ่มพนักงานใหม่</p>
+     </div>
+    </div>
+   </div>
+   <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+     <h3 class="text-2xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อมูล</h3>
+     <form id="edit-form" class="space-y-4"><input type="hidden" id="edit-field">
+      <div><label for="edit-value" class="block text-sm font-semibold text-gray-700 mb-1" id="edit-label">ค่า</label> <input type="number" id="edit-value" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+      <div class="flex gap-3"><button type="submit" class="flex-1 action-btn bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"> บันทึก </button> <button type="button" id="cancel-edit" class="flex-1 action-btn bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400"> ยกเลิก </button>
+      </div>
+     </form>
+    </div>
+   </div>
+  </div>
+  <script>
+    let employees = [];
+    let currentEditEmployee = null;
+    let currentMonth = 1;
+    let daysInMonth = 31;
+    
+    const daysPerMonth = {
+      1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+      7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+    };
+    
+    const defaultConfig = {
+      app_title: "ระบบลงทะเบียนกะพนักงาน",
+      instruction_text: "กดที่เซลล์เพื่อเลือกกะ D (กลางวัน) หรือ N (กลางคืน)",
+      primary_color: "#2563eb",
+      secondary_color: "#ffffff",
+      text_color: "#1e3a8a",
+      header_bg: "#1e3a8a",
+      accent_color: "#3b82f6"
+    };
+
+    const dataHandler = {
+      onDataChanged(data) {
+        employees = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        renderEmployeeTable();
+      }
+    };
+
+    async function onConfigChange(config) {
+      document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
+      document.getElementById('instruction-text').textContent = config.instruction_text || defaultConfig.instruction_text;
+      
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const headerBg = config.header_bg || defaultConfig.header_bg;
+      
+      document.querySelectorAll('.bg-blue-600').forEach(el => {
+        el.style.backgroundColor = primaryColor;
+      });
+      
+      document.querySelectorAll('th').forEach(el => {
+        el.style.backgroundColor = headerBg;
+      });
+    }
+
+    function generateDaysHeader() {
+      const header = document.getElementById('days-header');
+      let html = '<div class="flex">';
+      for (let i = 1; i <= daysInMonth; i++) {
+        html += `<div class="px-1 text-center" style="min-width: 32px;">${i}</div>`;
+      }
+      html += '</div>';
+      header.innerHTML = html;
+    }
+
+    function initializeShifts() {
+      return Array(daysInMonth).fill('');
+    }
+
+    function parseShifts(shiftsString) {
+      if (!shiftsString) return initializeShifts();
+      return shiftsString.split(',').map(s => s.trim());
+    }
+
+    function shiftsToString(shiftsArray) {
+      return shiftsArray.join(',');
+    }
+
+    function calculateShiftCount(shiftsArray) {
+      return shiftsArray.filter(s => s === 'D' || s === 'N').length;
+    }
+
+    function calculateDaysOff(shiftsArray) {
+      return daysInMonth - calculateShiftCount(shiftsArray);
+    }
+    
+    function calculateDailyRate(baseSalary) {
+      return baseSalary / daysInMonth;
+    }
+    
+    function calculateTotalWage(baseSalary, shiftCount) {
+      const dailyRate = calculateDailyRate(baseSalary);
+      return dailyRate * shiftCount;
+    }
+
+    function calculateRemaining(employee, shiftCount) {
+      const baseSalary = employee.base_salary || 0;
+      const totalWage = calculateTotalWage(baseSalary, shiftCount);
+      const overtime = employee.overtime || 0;
+      const salesPercent = employee.sales_percent || 0;
+      const casesCompleted = employee.cases_completed || 0;
+      
+      const deductions = 
+        (employee.uniform_cost || 0) +
+        (employee.training_cost || 0) +
+        (employee.utilities_cost || 0) +
+        (employee.violation_cost || 0) +
+        (employee.other_cost || 0);
+      
+      return totalWage + overtime + salesPercent + casesCompleted - deductions;
+    }
+
+    function renderEmployeeTable() {
+      const tbody = document.getElementById('employee-tbody');
+      const emptyState = document.getElementById('empty-state');
+      
+      if (employees.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      
+      emptyState.classList.add('hidden');
+      
+      tbody.innerHTML = employees.map((emp, index) => {
+        const shifts = parseShifts(emp.shifts);
+        const shiftCount = calculateShiftCount(shifts);
+        const daysOff = calculateDaysOff(shifts);
+        const dailyRate = calculateDailyRate(emp.base_salary || 0);
+        const totalWage = calculateTotalWage(emp.base_salary || 0, shiftCount);
+        const remaining = calculateRemaining(emp, shiftCount);
+        
+        const shiftCells = shifts.map((shift, dayIndex) => {
+          const cellClass = shift === 'D' ? 'shift-d' : shift === 'N' ? 'shift-n' : 'shift-empty';
+          const cellText = shift || '-';
+          return `<div class="shift-cell ${cellClass} px-1 text-center border border-gray-200" 
+                       style="min-width: 32px; height: 32px; line-height: 32px;"
+                       data-emp-id="${emp.__backendId}" 
+                       data-day="${dayIndex}">${cellText}</div>`;
+        }).join('');
+        
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-2 border border-gray-200 bg-white">${index + 1}</td>
+            <td class="px-4 py-2 border border-gray-200 font-semibold bg-white">${emp.employee_name}</td>
+            <td class="px-2 py-2 border border-gray-200">
+              <div class="flex">${shiftCells}</div>
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="base_salary">
+              ${(emp.base_salary || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-semibold text-blue-600">
+              ${dailyRate.toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-semibold">${shiftCount}</td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-bold text-green-600">
+              ${totalWage.toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="overtime">
+              ${(emp.overtime || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-semibold">${daysOff}</td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="sales_percent">
+              ${(emp.sales_percent || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="cases_completed">
+              ${(emp.cases_completed || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="uniform_cost">
+              ${(emp.uniform_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="training_cost">
+              ${(emp.training_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="utilities_cost">
+              ${(emp.utilities_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="violation_cost">
+              ${(emp.violation_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right cursor-pointer hover:bg-blue-50" 
+                data-edit="${emp.__backendId}" data-field="other_cost">
+              ${(emp.other_cost || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-bold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}">
+              ${remaining.toLocaleString('th-TH', {minimumFractionDigits: 2})}
+            </td>
+            <td class="px-4 py-2 border border-gray-200 text-center">
+              <button class="delete-btn bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs font-semibold"
+                      data-id="${emp.__backendId}">ลบ</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      attachEventListeners();
+    }
+
+    function attachEventListeners() {
+      document.querySelectorAll('.shift-cell').forEach(cell => {
+        cell.addEventListener('click', handleShiftClick);
+      });
+      
+      document.querySelectorAll('[data-edit]').forEach(cell => {
+        cell.addEventListener('click', handleEditClick);
+      });
+      
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', handleDelete);
+      });
+    }
+
+    async function handleShiftClick(e) {
+      const empId = e.target.dataset.empId;
+      const day = parseInt(e.target.dataset.day);
+      const employee = employees.find(emp => emp.__backendId === empId);
+      
+      if (!employee) return;
+      
+      const shifts = parseShifts(employee.shifts);
+      
+      if (shifts[day] === '') {
+        shifts[day] = 'D';
+      } else if (shifts[day] === 'D') {
+        shifts[day] = 'N';
+      } else {
+        shifts[day] = '';
+      }
+      
+      const updatedEmployee = {
+        ...employee,
+        shifts: shiftsToString(shifts)
+      };
+      
+      const result = await window.dataSdk.update(updatedEmployee);
+      
+      if (!result.isOk) {
+        showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+      }
+    }
+
+    function handleEditClick(e) {
+      const empId = e.target.dataset.edit;
+      const field = e.target.dataset.field;
+      const employee = employees.find(emp => emp.__backendId === empId);
+      
+      if (!employee) return;
+      
+      currentEditEmployee = employee;
+      
+      const fieldLabels = {
+        base_salary: 'เงินเดือนฐาน',
+        overtime: 'โอที',
+        sales_percent: 'เปอร์เซ็นขาย',
+        cases_completed: 'จบเคส',
+        uniform_cost: 'ค่าชุด',
+        training_cost: 'ค่าเรียน',
+        utilities_cost: 'ค่าน้ำค่าไฟ',
+        violation_cost: 'ผิดกฏระเบียบ',
+        other_cost: 'อื่นๆ'
+      };
+      
+      document.getElementById('modal-title').textContent = `แก้ไข${fieldLabels[field]}`;
+      document.getElementById('edit-label').textContent = fieldLabels[field];
+      document.getElementById('edit-field').value = field;
+      document.getElementById('edit-value').value = employee[field] || 0;
+      document.getElementById('edit-modal').classList.remove('hidden');
+      document.getElementById('edit-value').focus();
+    }
+
+    async function handleDelete(e) {
+      const empId = e.target.dataset.id;
+      const employee = employees.find(emp => emp.__backendId === empId);
+      
+      if (!employee) return;
+      
+      const confirmBtn = e.target;
+      const originalText = confirmBtn.textContent;
+      
+      if (confirmBtn.textContent === 'ลบ') {
+        confirmBtn.textContent = 'ยืนยัน?';
+        confirmBtn.classList.add('bg-red-700');
+        
+        setTimeout(() => {
+          confirmBtn.textContent = originalText;
+          confirmBtn.classList.remove('bg-red-700');
+        }, 3000);
+        return;
+      }
+      
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'กำลังลบ...';
+      
+      const result = await window.dataSdk.delete(employee);
+      
+      if (result.isOk) {
+        showToast('ลบพนักงานเรียบร้อยแล้ว', 'success');
+      } else {
+        showToast('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-semibold z-50 ${
+        type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+      }`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    document.getElementById('add-employee-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (employees.length >= 999) {
+        showToast('ไม่สามารถเพิ่มพนักงานได้ เนื่องจากถึงจำนวนสูงสุด 999 คน', 'error');
+        return;
+      }
+      
+      const name = document.getElementById('employee-name').value.trim();
+      const salary = parseFloat(document.getElementById('base-salary').value);
+      
+      const addBtn = document.getElementById('add-btn');
+      addBtn.disabled = true;
+      addBtn.textContent = 'กำลังเพิ่ม...';
+      
+      const newEmployee = {
+        employee_name: name,
+        base_salary: salary,
+        shifts: shiftsToString(initializeShifts()),
+        overtime: 0,
+        sales_percent: 0,
+        cases_completed: 0,
+        uniform_cost: 0,
+        training_cost: 0,
+        utilities_cost: 0,
+        violation_cost: 0,
+        other_cost: 0,
+        created_at: new Date().toISOString()
+      };
+      
+      const result = await window.dataSdk.create(newEmployee);
+      
+      if (result.isOk) {
+        showToast('เพิ่มพนักงานเรียบร้อยแล้ว', 'success');
+        document.getElementById('add-employee-form').reset();
+      } else {
+        showToast('เกิดข้อผิดพลาดในการเพิ่มพนักงาน', 'error');
+      }
+      
+      addBtn.disabled = false;
+      addBtn.textContent = 'เพิ่มพนักงาน';
+    });
+
+    document.getElementById('edit-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!currentEditEmployee) return;
+      
+      const field = document.getElementById('edit-field').value;
+      const value = parseFloat(document.getElementById('edit-value').value);
+      
+      const updatedEmployee = {
+        ...currentEditEmployee,
+        [field]: value
+      };
+      
+      const result = await window.dataSdk.update(updatedEmployee);
+      
+      if (result.isOk) {
+        showToast('บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+        document.getElementById('edit-modal').classList.add('hidden');
+        currentEditEmployee = null;
+      } else {
+        showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+      }
+    });
+
+    document.getElementById('cancel-edit').addEventListener('click', () => {
+      document.getElementById('edit-modal').classList.add('hidden');
+      currentEditEmployee = null;
+    });
+
+    document.getElementById('month-select').addEventListener('change', (e) => {
+      currentMonth = parseInt(e.target.value);
+      daysInMonth = daysPerMonth[currentMonth];
+      generateDaysHeader();
+      renderEmployeeTable();
+    });
+
+    async function initApp() {
+      const now = new Date();
+      currentMonth = now.getMonth() + 1;
+      daysInMonth = daysPerMonth[currentMonth];
+      document.getElementById('month-select').value = currentMonth;
+      
+      generateDaysHeader();
+      
+      if (window.dataSdk) {
+        const initResult = await window.dataSdk.init(dataHandler);
+        if (!initResult.isOk) {
+          showToast('เกิดข้อผิดพลาดในการเริ่มต้นระบบ', 'error');
+        }
+      }
+      
+      if (window.elementSdk) {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange,
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.primary_color || defaultConfig.primary_color,
+                set: (value) => {
+                  config.primary_color = value;
+                  window.elementSdk.setConfig({ primary_color: value });
+                }
+              },
+              {
+                get: () => config.secondary_color || defaultConfig.secondary_color,
+                set: (value) => {
+                  config.secondary_color = value;
+                  window.elementSdk.setConfig({ secondary_color: value });
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  config.text_color = value;
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              },
+              {
+                get: () => config.header_bg || defaultConfig.header_bg,
+                set: (value) => {
+                  config.header_bg = value;
+                  window.elementSdk.setConfig({ header_bg: value });
+                }
+              },
+              {
+                get: () => config.accent_color || defaultConfig.accent_color,
+                set: (value) => {
+                  config.accent_color = value;
+                  window.elementSdk.setConfig({ accent_color: value });
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: undefined,
+            fontSizeable: undefined
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["app_title", config.app_title || defaultConfig.app_title],
+            ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
+          ])
+        });
+      }
+    }
+
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9adb742a603737db',t:'MTc2NTY5MTc0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
