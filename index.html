@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจดบันทึกตารารางเวรและคำนวนเงินเดือน</title>
+  <title>ระบบลงทะเบียนกะพนักงาน</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   
@@ -85,6 +85,8 @@
       z-index: 12;
       background-color: #1e3a8a;
       color: white;
+      /* Adjusted width */
+      min-width: 70px; 
     }
 
     /* Sticky Second Column (ชื่อ-นามสกุล) */
@@ -95,12 +97,14 @@
         z-index: 12;
         background-color: #1e3a8a;
         color: white;
+        /* Adjusted width */
+        min-width: 180px; 
     }
     
-    /* Sticky Third Column (ตำแหน่ง) */
+    /* Sticky Third Column (ตำแหน่ง) - LEFT POSITION ADJUSTED */
     th:nth-child(3) {
         position: sticky;
-        left: 250px; /* 70px + 180px */
+        left: 250px; /* 70px (ลำดับ) + 180px (ชื่อ-นามสกุล) = 250px */
         z-index: 12;
         background-color: #1e3a8a;
         color: white;
@@ -129,7 +133,7 @@
    <div class="p-4 md:p-6 shadow-md bg-white flex-none z-20">
     <header class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
      <div>
-         <h1 class="text-3xl font-bold text-blue-900 mb-1">📅 ระบบจดบันทึกตารารางเวรและคำนวนเงินเดือน</h1>
+         <h1 class="text-3xl font-bold text-blue-900 mb-1">📅 ระบบลงทะเบียนกะพนักงาน</h1>
          <p class="text-sm text-gray-600">คลิกที่ช่องวันที่เพื่อวนกะ: ว่าง ➝ D (กลางวัน) ➝ N (กลางคืน) ➝ <span class="text-red-700 font-bold">X (วันหยุด)</span></p>
      </div>
      <div class="flex flex-col md:flex-row items-start md:items-center gap-2">
@@ -230,7 +234,7 @@
 
   <script>
     // --- Database Logic (LocalStorage) ---
-    const DB_KEY = 'shift_app_db_complete_v4'; // Updated key for new structure
+    const DB_KEY = 'shift_app_db_complete_v5'; // Updated key for new structure
     
     function loadData() {
         const data = localStorage.getItem(DB_KEY);
@@ -335,7 +339,6 @@
         
         const shiftCount = shiftsThisMonth.filter(s => s === 'D' || s === 'N').length;
         const daysOffCount = shiftsThisMonth.filter(s => s === 'X').length;
-        const remainingDays = daysInMonth - shiftCount - daysOffCount; // Days left blank (not specified)
         
         const dailyRate = (emp.base_salary || 0) / daysInMonth; 
         const totalWage = dailyRate * shiftCount;
@@ -444,13 +447,13 @@
     document.getElementById('add-employee-form').addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('employee-name').value.trim();
-        const position = document.getElementById('employee-position').value.trim(); // NEW FIELD
+        const position = document.getElementById('employee-position').value.trim();
         const salary = parseFloat(document.getElementById('base-salary').value);
         
         const newEmp = {
             id: Date.now().toString(),
             employee_name: name,
-            position: position, // SAVE NEW FIELD
+            position: position,
             base_salary: salary,
             shiftsObj: {}, 
             overtime: 0, sales_percent: 0, cases_completed: 0,
