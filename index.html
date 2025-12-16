@@ -46,6 +46,13 @@
       color: #b91c1c; /* Red 700 */
       font-weight: 700;
     }
+
+    .shift-dn {
+      background-color: #a78bfa; /* Violet 400 */
+      color: #312e81; /* Violet 900 */
+      font-weight: 700;
+      border: 1px dashed #6d28d9; /* Visual hint for double pay */
+    }
     
     .shift-empty {
       background-color: #f9fafb;
@@ -85,7 +92,6 @@
       z-index: 12;
       background-color: #1e3a8a;
       color: white;
-      /* Adjusted width */
       min-width: 70px; 
     }
 
@@ -97,14 +103,13 @@
         z-index: 12;
         background-color: #1e3a8a;
         color: white;
-        /* Adjusted width */
         min-width: 180px; 
     }
     
-    /* Sticky Third Column (ตำแหน่ง) - LEFT POSITION ADJUSTED */
+    /* Sticky Third Column (ตำแหน่ง) */
     th:nth-child(3) {
         position: sticky;
-        left: 250px; /* 70px (ลำดับ) + 180px (ชื่อ-นามสกุล) = 250px */
+        left: 250px; /* 70px + 180px */
         z-index: 12;
         background-color: #1e3a8a;
         color: white;
@@ -113,7 +118,7 @@
     td:nth-child(3) { 
         position: sticky;
         left: 250px; 
-        z-index: 11; /* Lower Z-index than 1st two columns */
+        z-index: 11; 
         background-color: white;
         min-width: 150px;
     }
@@ -134,11 +139,14 @@
     <header class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
      <div>
          <h1 class="text-3xl font-bold text-blue-900 mb-1">📅 ระบบบันทึกตารางเวรและคำนวนเงินเดือน</h1>
-         <p class="text-sm text-gray-600">คลิกที่ช่องวันที่เพื่อวนกะ: ว่าง ➝ D (กลางวัน) ➝ N (กลางคืน) ➝ <span class="text-red-700 font-bold">X (วันหยุด)</span></p>
+         <p class="text-sm text-gray-600">
+            คลิกที่ช่องวันที่เพื่อวนกะ: ว่าง ➝ D ➝ N ➝ <span class="text-violet-900 font-bold">DN (ดับเบิ้ลกะ/2 เวร)</span> ➝ <span class="text-red-700 font-bold">X (วันหยุด)</span>
+            <br>
+        </p>
      </div>
      <div class="flex flex-col md:flex-row items-start md:items-center gap-2">
          <div class="flex items-center gap-3 bg-blue-50 p-2 rounded-lg border border-blue-200">
-             <label for="month-select" class="text-sm font-semibold text-blue-800">เลือกเดือน:</label> 
+             <label for="month-select" class="block text-sm font-semibold text-blue-800">เลือกเดือน:</label> 
              <select id="month-select" class="px-3 py-1 border border-blue-300 rounded text-blue-900 font-semibold focus:ring-2 focus:ring-blue-500"> 
                  <option value="1">ม.ค.</option> <option value="2">ก.พ.</option> <option value="3">มี.ค.</option> 
                  <option value="4">เม.ย.</option> <option value="5">พ.ค.</option> <option value="6">มิ.ย.</option> 
@@ -193,7 +201,7 @@
          <th class="px-4 py-3 text-right">หยุด</th>
          <th class="px-4 py-3 text-right">%ขาย</th>
          <th class="px-4 py-3 text-right">จบเคส</th>
-         <th class="px-4 py-3 text-right">ค่าหัวเตียง</th>
+         <th class="px-4 py-3 text-right">ค่าชุด</th>
          <th class="px-4 py-3 text-right">ค่าเรียน</th>
          <th class="px-4 py-3 text-right">ค่าน้ำ/ไฟ</th>
          <th class="px-4 py-3 text-right">ผิดกฏ</th>
@@ -234,7 +242,8 @@
 
   <script>
     // --- Database Logic (LocalStorage) ---
-    const DB_KEY = 'shift_app_db_complete_v5'; // Updated key for new structure
+    // Change key for new logic (fixed 4 days off)
+    const DB_KEY = 'shift_app_db_complete_v8_4days_off'; 
     
     function loadData() {
         const data = localStorage.getItem(DB_KEY);
@@ -297,11 +306,13 @@
     }
 
     // --- Shift Helper Functions ---
-    // Cycle: '' -> D -> N -> X -> ''
+    // Cycle: '' -> D -> N -> DN -> X -> ''
     function getNextShift(current) {
         if (current === '') return 'D';
         if (current === 'D') return 'N';
-        if (current === 'N') return 'X'; // X for Day Off / Vacation
+        if (current === 'N') return 'DN'; 
+        if (current === 'DN') return 'X'; 
+        if (current === 'X') return ''; 
         return '';
     }
 
@@ -337,11 +348,28 @@
         const shifts = getShifts(emp);
         const shiftsThisMonth = shifts.slice(0, daysInMonth);
         
-        const shiftCount = shiftsThisMonth.filter(s => s === 'D' || s === 'N').length;
-        const daysOffCount = shiftsThisMonth.filter(s => s === 'X').length;
+        // ** LOGIC UPDATE: Calculate days to be paid based on 4 fixed days off **
+        // Ensure this doesn't result in 0 or negative daysToPay for short months, 
+        // though typically a salary is paid based on > 4 working weeks.
+        const daysToPay = Math.max(1, daysInMonth - 4); 
         
-        const dailyRate = (emp.base_salary || 0) / daysInMonth; 
-        const totalWage = dailyRate * shiftCount;
+        // Calculate total shift units
+        let shiftCount = 0;
+        const daysOffCount = shiftsThisMonth.filter(s => s === 'X').length;
+
+        shiftsThisMonth.forEach(s => {
+            if (s === 'D' || s === 'N') {
+                shiftCount += 1; // Single shift counts as 1 unit
+            } else if (s === 'DN') {
+                shiftCount += 2; // Double shift counts as 2 units
+            }
+        });
+        
+        // ** UPDATED: Daily Rate Calculation **
+        // Base Salary is divided by working days (DaysInMonth - 4)
+        const dailyRate = (emp.base_salary || 0) / daysToPay; 
+        
+        const totalWage = dailyRate * shiftCount; // Total units * Daily Rate
         
         const deductions = (emp.uniform_cost || 0) + (emp.training_cost || 0) + 
                           (emp.utilities_cost || 0) + (emp.violation_cost || 0) + (emp.other_cost || 0);
@@ -350,7 +378,7 @@
         
         const remaining = totalWage + additions - deductions;
 
-        return { shiftCount, daysOffCount, dailyRate, totalWage, remaining, deductions, additions };
+        return { shiftCount, daysOffCount, dailyRate, totalWage, remaining, deductions, additions, daysToPay };
     }
 
     // --- Rendering ---
@@ -377,6 +405,7 @@
             if (s === 'D') cls = 'shift-d';
             else if (s === 'N') cls = 'shift-n';
             else if (s === 'X') cls = 'shift-x';
+            else if (s === 'DN') cls = 'shift-dn'; 
             
             const visibility = (i < daysInMonth) ? 'block' : 'hidden'; 
             
@@ -398,7 +427,7 @@
             <td class="px-0 py-0 border-r border-b-0"><div class="flex">${shiftCells.join('')}</div></td>
             
             <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-gray-600" onclick="openEdit('${emp.id}', 'base_salary')">${fmt(emp.base_salary)}</td>
-            <td class="p-2 text-right text-gray-500">${fmt(stats.dailyRate)}</td>
+            <td class="p-2 text-right text-gray-500" title="ฐานเงินเดือน หาร ${stats.daysToPay} วัน">${fmt(stats.dailyRate)}</td>
             <td class="p-2 text-right font-bold">${stats.shiftCount}</td>
             <td class="p-2 text-right font-bold text-blue-700 bg-blue-50">${fmt(stats.totalWage)}</td>
             
