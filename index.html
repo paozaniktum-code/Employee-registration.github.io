@@ -5,183 +5,223 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบจดบันทึกตารารางเวรและคำนวนเงินเดือน</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  
   <style>
     body {
       box-sizing: border-box;
-      font-family: sans-serif;
+      font-family: 'Sarabun', sans-serif;
     }
     
+    /* --- Shift Cell Styles --- */
     .shift-cell {
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.1s;
       user-select: none;
       font-size: 12px;
-    }
-    
-    .shift-cell:hover {
-      transform: scale(1.1);
-      z-index: 20;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      height: 32px;
+      line-height: 32px;
+      min-width: 30px;
+      border-right: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .shift-d {
-      background-color: #fef3c7;
-      color: #92400e;
-      font-weight: 600;
+      background-color: #fef3c7; /* Amber 100 */
+      color: #92400e; /* Amber 800 */
+      font-weight: 700;
     }
     
     .shift-n {
-      background-color: #dbeafe;
-      color: #1e40af;
-      font-weight: 600;
+      background-color: #dbeafe; /* Blue 100 */
+      color: #1e40af; /* Blue 800 */
+      font-weight: 700;
+    }
+
+    .shift-x {
+      background-color: #fecaca; /* Red 100 */
+      color: #b91c1c; /* Red 700 */
+      font-weight: 700;
     }
     
     .shift-empty {
-      background-color: #f3f4f6;
-      color: #9ca3af;
+      background-color: #f9fafb;
+      color: #d1d5db;
     }
-    
+
+    /* --- Table Styles for Scrolling --- */
     .table-wrapper {
       overflow-x: auto;
       overflow-y: auto;
-      max-height: calc(100vh - 280px); /* ปรับให้พอดีหน้าจอ */
+      max-height: calc(100vh - 280px); 
       border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
     }
     
     table {
       border-collapse: separate;
       border-spacing: 0;
+      min-width: 1600px; /* Ensure table is wide enough */
     }
     
     th {
       position: sticky;
       top: 0;
       background-color: #1e3a8a;
+      color: white;
       z-index: 10;
       white-space: nowrap;
       padding: 8px;
     }
     
+    /* Sticky First Column (ลำดับ) */
     th:first-child,
     td:first-child {
       position: sticky;
       left: 0;
-      z-index: 5;
-      background-color: white;
-      border-right: 2px solid #e5e7eb;
-    }
-    
-    th:first-child {
-      z-index: 15;
+      z-index: 12;
       background-color: #1e3a8a;
-    }
-    
-    .action-btn {
-      transition: all 0.2s;
-    }
-    
-    .action-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      color: white;
     }
 
+    /* Sticky Second Column (ชื่อ-นามสกุล) */
+    th:nth-child(2),
+    td:nth-child(2) { 
+        position: sticky;
+        left: 70px; 
+        z-index: 12;
+        background-color: #1e3a8a;
+        color: white;
+    }
+    
+    /* Sticky Third Column (ตำแหน่ง) */
+    th:nth-child(3) {
+        position: sticky;
+        left: 250px; /* 70px + 180px */
+        z-index: 12;
+        background-color: #1e3a8a;
+        color: white;
+    }
+
+    td:nth-child(3) { 
+        position: sticky;
+        left: 250px; 
+        z-index: 11; /* Lower Z-index than 1st two columns */
+        background-color: white;
+        min-width: 150px;
+    }
+    
     td {
         white-space: nowrap;
         vertical-align: middle;
+        font-size: 13px;
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
     }
   </style>
  </head>
  <body class="h-full">
-  <div class="h-full w-full bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden flex flex-col">
-   <div class="p-6 flex-none">
-    <header class="mb-4 flex justify-between items-center">
+  <div class="h-full w-full bg-gray-50 overflow-hidden flex flex-col">
+   
+   <div class="p-4 md:p-6 shadow-md bg-white flex-none z-20">
+    <header class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
      <div>
-         <h1 id="app-title" class="text-4xl font-bold text-blue-900 mb-2">ระบบจดบันทึกตารารางเวรและคำนวนเงินเดือน</h1>
-         <p id="instruction-text" class="text-blue-700">กดที่เซลล์เพื่อเลือกกะ D (กลางวัน) หรือ N (กลางคืน)</p>
+         <h1 class="text-3xl font-bold text-blue-900 mb-1">📅 ระบบจดบันทึกตารารางเวรและคำนวนเงินเดือน</h1>
+         <p class="text-sm text-gray-600">คลิกที่ช่องวันที่เพื่อวนกะ: ว่าง ➝ D (กลางวัน) ➝ N (กลางคืน) ➝ <span class="text-red-700 font-bold">X (วันหยุด)</span></p>
      </div>
-     <div class="text-right">
-         <button onclick="resetData()" class="text-xs text-red-400 hover:text-red-600 underline">รีเซ็ตข้อมูลทั้งหมด</button>
+     <div class="flex flex-col md:flex-row items-start md:items-center gap-2">
+         <div class="flex items-center gap-3 bg-blue-50 p-2 rounded-lg border border-blue-200">
+             <label for="month-select" class="text-sm font-semibold text-blue-800">เลือกเดือน:</label> 
+             <select id="month-select" class="px-3 py-1 border border-blue-300 rounded text-blue-900 font-semibold focus:ring-2 focus:ring-blue-500"> 
+                 <option value="1">ม.ค.</option> <option value="2">ก.พ.</option> <option value="3">มี.ค.</option> 
+                 <option value="4">เม.ย.</option> <option value="5">พ.ค.</option> <option value="6">มิ.ย.</option> 
+                 <option value="7">ก.ค.</option> <option value="8">ส.ค.</option> <option value="9">ก.ย.</option> 
+                 <option value="10">ต.ค.</option> <option value="11">พ.ย.</option> <option value="12">ธ.ค.</option> 
+             </select>
+             <span id="days-display" class="text-xs text-gray-600 font-medium bg-white px-2 py-1 rounded border">31 วัน</span>
+         </div>
+         <button id="print-report-btn" class="action-btn bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 shadow-md"> 📊 ออกรายงาน </button>
      </div>
     </header>
     
-    <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
-     <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
-      <h2 class="text-2xl font-bold text-blue-900">เพิ่มพนักงานใหม่</h2>
-      <div class="flex items-center gap-3">
-          <label for="month-select" class="text-sm font-semibold text-gray-700">เดือน:</label> 
-          <select id="month-select" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold"> 
-              <option value="1">มกราคม</option> <option value="2">กุมภาพันธ์</option> <option value="3">มีนาคม</option> 
-              <option value="4">เมษายน</option> <option value="5">พฤษภาคม</option> <option value="6">มิถุนายน</option> 
-              <option value="7">กรกฎาคม</option> <option value="8">สิงหาคม</option> <option value="9">กันยายน</option> 
-              <option value="10">ตุลาคม</option> <option value="11">พฤศจิกายน</option> <option value="12">ธันวาคม</option> 
-          </select>
-          <span id="days-display" class="text-sm text-gray-500 font-bold bg-gray-100 px-2 py-1 rounded">31 วัน</span>
+    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+     <h2 class="text-xl font-bold text-blue-900 mb-3">เพิ่มพนักงานใหม่</h2>
+     <form id="add-employee-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+          <label for="employee-name" class="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล</label> 
+          <input type="text" id="employee-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
       </div>
-     </div>
-     <form id="add-employee-form" class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-       <div><label for="employee-name" class="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล</label> <input type="text" id="employee-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
-       <div><label for="base-salary" class="block text-sm font-semibold text-gray-700 mb-1">เงินเดือนฐาน (บาท)</label> <input type="number" id="base-salary" required min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
-       <div class="flex items-end"><button type="submit" id="add-btn" class="w-full action-btn bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 h-10"> เพิ่มพนักงาน </button></div>
+      <div>
+          <label for="employee-position" class="block text-sm font-semibold text-gray-700 mb-1">ตำแหน่ง</label> 
+          <input type="text" id="employee-position" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="เช่น ผู้จัดการ/พนักงาน">
+      </div>
+      <div>
+          <label for="base-salary" class="block text-sm font-semibold text-gray-700 mb-1">เงินเดือนฐาน (บาท)</label> 
+          <input type="number" id="base-salary" required min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="flex items-end pt-2 md:pt-0">
+          <button type="submit" id="add-btn" class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 h-10 shadow-md"> + เพิ่มพนักงาน </button>
       </div>
      </form>
+     <button onclick="resetData()" class="text-xs text-red-500 hover:text-red-700 underline mt-3">รีเซ็ตข้อมูลทั้งหมด (ลบถาวร)</button>
     </div>
    </div>
 
-   <div class="flex-1 px-6 pb-6 overflow-hidden flex flex-col">
-    <div class="bg-white rounded-lg shadow-lg p-4 flex flex-col h-full">
-     <div class="flex justify-between items-center mb-4 flex-none">
-      <h2 class="text-2xl font-bold text-blue-900">รายชื่อพนักงาน</h2>
-      <button id="print-report-btn" class="action-btn bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700"> 📊 ออกรายงาน </button>
-     </div>
-     
+   <div class="flex-1 px-4 md:px-6 pb-6 overflow-hidden flex flex-col">
+    <div class="bg-white rounded-lg shadow-lg flex flex-col h-full">
      <div id="table-container" class="table-wrapper flex-1">
-      <table class="w-full text-sm">
+      <table>
        <thead>
         <tr>
-         <th class="px-4 py-3 text-left text-white font-semibold border border-blue-800">ลำดับ</th>
-         <th class="px-4 py-3 text-left text-white font-semibold border border-blue-800">ชื่อ-นามสกุล</th>
-         <th class="px-0 py-3 text-center text-white font-semibold border border-blue-800" id="days-header"></th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">เงินเดือน</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าจ้าง/วัน</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">จำนวนเวร</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">รวมค่าจ้าง</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">โอที</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">หยุด</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">%ขาย</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">จบเคส</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าชุด</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าเรียน</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ค่าน้ำ/ไฟ</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">ผิดกฏ</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">อื่นๆ</th>
-         <th class="px-4 py-3 text-right text-white font-semibold border border-blue-800">คงเหลือ</th>
-         <th class="px-4 py-3 text-center text-white font-semibold border border-blue-800">จัดการ</th>
+         <th class="text-center w-16">ลำดับ</th>
+         <th class="text-left w-48">ชื่อ-นามสกุล</th>
+         <th class="text-left w-40">ตำแหน่ง</th> 
+         <th class="px-0 py-3 text-center" id="days-header">
+            </th>
+         <th class="px-4 py-3 text-right">เงินเดือน</th>
+         <th class="px-4 py-3 text-right">ค่าจ้าง/วัน</th>
+         <th class="px-4 py-3 text-right">จำนวนเวร</th>
+         <th class="px-4 py-3 text-right bg-blue-800">รวมค่าจ้าง</th>
+         <th class="px-4 py-3 text-right">โอที</th>
+         <th class="px-4 py-3 text-right">หยุด</th>
+         <th class="px-4 py-3 text-right">%ขาย</th>
+         <th class="px-4 py-3 text-right">จบเคส</th>
+         <th class="px-4 py-3 text-right">ค่าชุด</th>
+         <th class="px-4 py-3 text-right">ค่าเรียน</th>
+         <th class="px-4 py-3 text-right">ค่าน้ำ/ไฟ</th>
+         <th class="px-4 py-3 text-right">ผิดกฏ</th>
+         <th class="px-4 py-3 text-right">อื่นๆ</th>
+         <th class="px-4 py-3 text-right bg-green-700">คงเหลือ</th>
+         <th class="px-4 py-3 text-center">จัดการ</th>
         </tr>
        </thead>
        <tbody id="employee-tbody">
         </tbody>
       </table>
       <div id="empty-state" class="text-center py-12 text-gray-500 hidden">
-        <p class="text-lg">ยังไม่มีพนักงานในระบบ กรุณาเพิ่มพนักงานใหม่</p>
+        <p class="text-lg font-semibold">ยังไม่มีพนักงานในระบบ</p>
+        <p class="text-sm">กรุณาใช้ฟอร์มด้านบนเพื่อเพิ่มพนักงานใหม่</p>
       </div>
      </div>
     </div>
    </div>
 
    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
-     <h3 class="text-2xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อมูล</h3>
+    <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6">
+     <h3 class="text-xl font-bold text-blue-900 mb-4" id="modal-title">แก้ไขข้อมูล</h3>
      <form id="edit-form" class="space-y-4">
       <input type="hidden" id="edit-id">
       <input type="hidden" id="edit-field">
       <div>
           <label for="edit-value" class="block text-sm font-semibold text-gray-700 mb-1" id="edit-label">ค่า</label> 
-          <input type="number" id="edit-value" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-bold">
+          <input type="number" id="edit-value" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg font-bold text-center">
       </div>
       <div class="flex gap-3">
-          <button type="submit" class="flex-1 action-btn bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"> บันทึก </button> 
-          <button type="button" id="cancel-edit" class="flex-1 action-btn bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400"> ยกเลิก </button>
+          <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700"> บันทึก </button> 
+          <button type="button" id="cancel-edit" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"> ยกเลิก </button>
       </div>
      </form>
     </div>
@@ -190,7 +230,7 @@
 
   <script>
     // --- Database Logic (LocalStorage) ---
-    const DB_KEY = 'shift_app_db_complete';
+    const DB_KEY = 'shift_app_db_complete_v4'; // Updated key for new structure
     
     function loadData() {
         const data = localStorage.getItem(DB_KEY);
@@ -212,10 +252,9 @@
       7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
     };
 
-    function getDaysInMonth(month) {
-        // Simple Leap year check for current year
+    function getDaysInMonth(month, year) {
         if (month === 2) {
-            return (currentYear % 4 === 0 && currentYear % 100 !== 0) || (currentYear % 400 === 0) ? 29 : 28;
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0) ? 29 : 28;
         }
         return daysPerMonth[month];
     }
@@ -237,7 +276,7 @@
     });
 
     function updateConfig() {
-        daysInMonth = getDaysInMonth(currentMonth);
+        daysInMonth = getDaysInMonth(currentMonth, currentYear);
         document.getElementById('days-display').textContent = `${daysInMonth} วัน`;
         generateDaysHeader();
     }
@@ -245,15 +284,23 @@
     function generateDaysHeader() {
       const header = document.getElementById('days-header');
       let html = '<div class="flex">';
-      for (let i = 1; i <= daysInMonth; i++) {
-        html += `<div class="px-1 text-center border-r border-blue-400 text-xs flex items-center justify-center" style="min-width: 30px; height: 100%;">${i}</div>`;
+      for (let i = 1; i <= 31; i++) {
+        const visibility = (i <= daysInMonth) ? 'block' : 'hidden';
+        html += `<div class="${visibility} px-1 text-center border-r border-blue-400 text-xs flex items-center justify-center" style="min-width: 30px; height: 100%;">${i}</div>`;
       }
       html += '</div>';
       header.innerHTML = html;
     }
 
     // --- Shift Helper Functions ---
-    // เก็บข้อมูลกะเป็น Object: { "เดือน-ปี": "D,N,,..." }
+    // Cycle: '' -> D -> N -> X -> ''
+    function getNextShift(current) {
+        if (current === '') return 'D';
+        if (current === 'D') return 'N';
+        if (current === 'N') return 'X'; // X for Day Off / Vacation
+        return '';
+    }
+
     function getMonthKey() {
         return `${currentMonth}-${currentYear}`;
     }
@@ -263,24 +310,34 @@
         const key = getMonthKey();
         const shiftsStr = emp.shiftsObj[key];
         
-        if (shiftsStr) return shiftsStr.split(',');
-        return Array(daysInMonth).fill('');
+        const shiftsArray = shiftsStr ? shiftsStr.split(',') : Array(31).fill('');
+        return shiftsArray.slice(0, 31);
     }
 
     function saveShifts(emp, shiftsArray) {
         if (!emp.shiftsObj) emp.shiftsObj = {};
-        emp.shiftsObj[getMonthKey()] = shiftsArray.join(',');
         
-        // Save to DB
+        const paddedShifts = shiftsArray.slice(0, 31);
+        while (paddedShifts.length < 31) {
+            paddedShifts.push('');
+        }
+        
+        emp.shiftsObj[getMonthKey()] = paddedShifts.join(',');
+        
         const idx = employees.findIndex(e => e.id === emp.id);
         if (idx !== -1) employees[idx] = emp;
         saveData(employees);
     }
 
-    function calculateStats(emp, shifts) {
-        const shiftCount = shifts.filter(s => s === 'D' || s === 'N').length;
-        const daysOff = daysInMonth - shiftCount;
-        const dailyRate = (emp.base_salary || 0) / daysInMonth;
+    function calculateStats(emp) {
+        const shifts = getShifts(emp);
+        const shiftsThisMonth = shifts.slice(0, daysInMonth);
+        
+        const shiftCount = shiftsThisMonth.filter(s => s === 'D' || s === 'N').length;
+        const daysOffCount = shiftsThisMonth.filter(s => s === 'X').length;
+        const remainingDays = daysInMonth - shiftCount - daysOffCount; // Days left blank (not specified)
+        
+        const dailyRate = (emp.base_salary || 0) / daysInMonth; 
         const totalWage = dailyRate * shiftCount;
         
         const deductions = (emp.uniform_cost || 0) + (emp.training_cost || 0) + 
@@ -290,7 +347,7 @@
         
         const remaining = totalWage + additions - deductions;
 
-        return { shiftCount, daysOff, dailyRate, totalWage, remaining };
+        return { shiftCount, daysOffCount, dailyRate, totalWage, remaining, deductions, additions };
     }
 
     // --- Rendering ---
@@ -307,46 +364,56 @@
       
       tbody.innerHTML = employees.map((emp, index) => {
         const shifts = getShifts(emp);
-        const stats = calculateStats(emp, shifts);
+        const stats = calculateStats(emp);
         
         // Render Shift Cells
         const shiftCells = [];
-        for(let i=0; i<daysInMonth; i++) {
+        for(let i=0; i<31; i++) {
             const s = shifts[i] || '';
-            const cls = s === 'D' ? 'shift-d' : s === 'N' ? 'shift-n' : 'shift-empty';
+            let cls = 'shift-empty';
+            if (s === 'D') cls = 'shift-d';
+            else if (s === 'N') cls = 'shift-n';
+            else if (s === 'X') cls = 'shift-x';
+            
+            const visibility = (i < daysInMonth) ? 'block' : 'hidden'; 
+            
             shiftCells.push(`
-                <div class="shift-cell ${cls} border-r border-gray-200 text-center flex items-center justify-center" 
-                     style="min-width: 30px; height: 32px;"
+                <div class="${visibility} shift-cell ${cls} text-center" 
                      onclick="toggleShift('${emp.id}', ${i})">${s}</div>
             `);
         }
         
         return `
-          <tr class="hover:bg-gray-50 border-b border-gray-200">
-            <td class="px-4 py-2 border-r text-center">${index + 1}</td>
-            <td class="px-4 py-2 border-r font-semibold">${emp.employee_name}</td>
-            <td class="px-0 py-2 border-r"><div class="flex">${shiftCells.join('')}</div></td>
+          <tr class="hover:bg-gray-50 bg-white">
+            <td class="p-2 text-center font-bold text-gray-700 sticky left-0 z-10 bg-gray-100 min-w-[70px]">${index + 1}</td>
+            <td class="p-2 font-semibold text-blue-900 sticky left-[70px] z-10 bg-white min-w-[180px]">
+                <div class="truncate w-full" title="${emp.employee_name}">${emp.employee_name}</div>
+            </td>
+            <td class="p-2 text-gray-700 sticky left-[250px] z-11 bg-white min-w-[150px]">
+                <div class="truncate w-full" title="${emp.position}">${emp.position || '-'}</div>
+            </td>
+            <td class="px-0 py-0 border-r border-b-0"><div class="flex">${shiftCells.join('')}</div></td>
             
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50" onclick="openEdit('${emp.id}', 'base_salary')">${fmt(emp.base_salary)}</td>
-            <td class="px-4 py-2 border-r text-right text-gray-500">${fmt(stats.dailyRate)}</td>
-            <td class="px-4 py-2 border-r text-right font-bold">${stats.shiftCount}</td>
-            <td class="px-4 py-2 border-r text-right font-bold text-blue-700 bg-blue-50">${fmt(stats.totalWage)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-gray-600" onclick="openEdit('${emp.id}', 'base_salary')">${fmt(emp.base_salary)}</td>
+            <td class="p-2 text-right text-gray-500">${fmt(stats.dailyRate)}</td>
+            <td class="p-2 text-right font-bold">${stats.shiftCount}</td>
+            <td class="p-2 text-right font-bold text-blue-700 bg-blue-50">${fmt(stats.totalWage)}</td>
             
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50" onclick="openEdit('${emp.id}', 'overtime')">${fmt(emp.overtime)}</td>
-            <td class="px-4 py-2 border-r text-right">${stats.daysOff}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-green-600" onclick="openEdit('${emp.id}', 'overtime')">${fmt(emp.overtime)}</td>
+            <td class="p-2 text-right font-bold text-red-700">${stats.daysOffCount}</td>
             
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50" onclick="openEdit('${emp.id}', 'sales_percent')">${fmt(emp.sales_percent)}</td>
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50" onclick="openEdit('${emp.id}', 'cases_completed')">${fmt(emp.cases_completed)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-green-600" onclick="openEdit('${emp.id}', 'sales_percent')">${fmt(emp.sales_percent)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-green-600" onclick="openEdit('${emp.id}', 'cases_completed')">${fmt(emp.cases_completed)}</td>
             
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'uniform_cost')">${fmt(emp.uniform_cost)}</td>
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'training_cost')">${fmt(emp.training_cost)}</td>
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'utilities_cost')">${fmt(emp.utilities_cost)}</td>
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'violation_cost')">${fmt(emp.violation_cost)}</td>
-            <td class="px-4 py-2 border-r text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'other_cost')">${fmt(emp.other_cost)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'uniform_cost')">${fmt(emp.uniform_cost)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'training_cost')">${fmt(emp.training_cost)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'utilities_cost')">${fmt(emp.utilities_cost)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'violation_cost')">${fmt(emp.violation_cost)}</td>
+            <td class="p-2 text-right cursor-pointer hover:bg-yellow-50 text-red-500" onclick="openEdit('${emp.id}', 'other_cost')">${fmt(emp.other_cost)}</td>
             
-            <td class="px-4 py-2 border-r text-right font-bold text-white ${stats.remaining >= 0 ? 'bg-green-500' : 'bg-red-500'}">${fmt(stats.remaining)}</td>
+            <td class="p-2 text-right font-bold text-white ${stats.remaining >= 0 ? 'bg-green-600' : 'bg-red-600'}">${fmt(stats.remaining)}</td>
             
-            <td class="px-4 py-2 text-center">
+            <td class="p-2 text-center">
               <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs font-semibold" onclick="deleteEmployee('${emp.id}')">ลบ</button>
             </td>
           </tr>
@@ -355,19 +422,20 @@
     }
     
     function fmt(num) {
-        return (num || 0).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        return (num || 0).toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits: 2});
     }
 
     // --- Actions ---
     function toggleShift(id, dayIdx) {
+        if (dayIdx >= daysInMonth) return; 
+        
         const emp = employees.find(e => e.id === id);
         if (!emp) return;
         
         const shifts = getShifts(emp);
         const current = shifts[dayIdx];
         
-        // Cycle: '' -> D -> N -> ''
-        shifts[dayIdx] = current === '' ? 'D' : (current === 'D' ? 'N' : '');
+        shifts[dayIdx] = getNextShift(current);
         
         saveShifts(emp, shifts);
         renderEmployeeTable();
@@ -376,13 +444,15 @@
     document.getElementById('add-employee-form').addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('employee-name').value.trim();
+        const position = document.getElementById('employee-position').value.trim(); // NEW FIELD
         const salary = parseFloat(document.getElementById('base-salary').value);
         
         const newEmp = {
             id: Date.now().toString(),
             employee_name: name,
+            position: position, // SAVE NEW FIELD
             base_salary: salary,
-            shiftsObj: {}, // เก็บแยกเดือน
+            shiftsObj: {}, 
             overtime: 0, sales_percent: 0, cases_completed: 0,
             uniform_cost: 0, training_cost: 0, utilities_cost: 0, violation_cost: 0, other_cost: 0,
             created_at: new Date().toISOString()
@@ -395,7 +465,7 @@
     });
 
     function deleteEmployee(id) {
-        if(confirm('ยืนยันการลบข้อมูลพนักงาน?')) {
+        if(confirm('ยืนยันการลบข้อมูลพนักงานคนนี้หรือไม่? ข้อมูลจะหายไปถาวร')) {
             employees = employees.filter(e => e.id !== id);
             saveData(employees);
             renderEmployeeTable();
@@ -403,17 +473,17 @@
     }
     
     function resetData() {
-        if(confirm('ระวัง! ข้อมูลทั้งหมดจะหายไป คุณแน่ใจหรือไม่?')) {
+        if(confirm('คำเตือน: ข้อมูลทั้งหมดจะถูกลบ! คุณแน่ใจหรือไม่?')) {
             localStorage.removeItem(DB_KEY);
             location.reload();
         }
     }
 
-    // --- Edit Modal ---
+    // --- Edit Modal Logic ---
     const fieldLabels = {
-        base_salary: 'เงินเดือนฐาน', overtime: 'โอที', sales_percent: '%ขาย', cases_completed: 'จบเคส',
-        uniform_cost: 'ค่าชุด', training_cost: 'ค่าเรียน', utilities_cost: 'ค่าน้ำ/ไฟ',
-        violation_cost: 'ผิดกฏ', other_cost: 'อื่นๆ'
+        base_salary: 'เงินเดือนฐาน', overtime: 'ค่าล่วงเวลา (OT)', sales_percent: '%ขาย/ค่าคอม', cases_completed: 'ค่าจบเคส',
+        uniform_cost: 'ค่าชุด (หัก)', training_cost: 'ค่าเรียน (หัก)', utilities_cost: 'ค่าน้ำ/ไฟ (หัก)',
+        violation_cost: 'ค่าปรับ/ผิดกฎ (หัก)', other_cost: 'อื่นๆ (หัก)'
     };
 
     function openEdit(id, field) {
@@ -453,25 +523,18 @@
         const monthName = document.getElementById('month-select').options[document.getElementById('month-select').selectedIndex].text;
         
         const rows = employees.map((emp, i) => {
-            const shifts = getShifts(emp);
-            const stats = calculateStats(emp, shifts);
+            const stats = calculateStats(emp);
             return `
                 <tr>
                     <td style="text-align:center">${i+1}</td>
                     <td>${emp.employee_name}</td>
+                    <td>${emp.position || '-'}</td>
                     <td style="text-align:right">${fmt(emp.base_salary)}</td>
-                    <td style="text-align:right">${fmt(stats.dailyRate)}</td>
                     <td style="text-align:center">${stats.shiftCount}</td>
+                    <td style="text-align:center">${stats.daysOffCount}</td>
                     <td style="text-align:right">${fmt(stats.totalWage)}</td>
-                    <td style="text-align:right">${fmt(emp.overtime)}</td>
-                    <td style="text-align:center">${stats.daysOff}</td>
-                    <td style="text-align:right">${fmt(emp.sales_percent)}</td>
-                    <td style="text-align:right">${fmt(emp.cases_completed)}</td>
-                    <td style="text-align:right">${fmt(emp.uniform_cost)}</td>
-                    <td style="text-align:right">${fmt(emp.training_cost)}</td>
-                    <td style="text-align:right">${fmt(emp.utilities_cost)}</td>
-                    <td style="text-align:right">${fmt(emp.violation_cost)}</td>
-                    <td style="text-align:right">${fmt(emp.other_cost)}</td>
+                    <td style="text-align:right; color: green;">${fmt(stats.additions)}</td>
+                    <td style="text-align:right; color: red;">-${fmt(stats.deductions)}</td>
                     <td style="text-align:right; font-weight:bold;">${fmt(stats.remaining)}</td>
                 </tr>
             `;
@@ -482,11 +545,11 @@
             <head>
                 <title>รายงานประจำเดือน ${monthName}</title>
                 <style>
-                    body { font-family: 'Sarabun', sans-serif; font-size: 10px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #333; padding: 4px; }
-                    th { background-color: #eee; text-align: center; }
-                    h1 { text-align: center; margin-bottom: 20px; }
+                    body { font-family: 'Sarabun', sans-serif; padding: 20px; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #333; padding: 8px; }
+                    th { background-color: #f0f0f0; text-align: center; }
+                    h1 { text-align: center; margin-bottom: 20px; color: #1e3a8a; }
                 </style>
             </head>
             <body>
@@ -494,19 +557,19 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>ลำดับ</th> <th>ชื่อ-นามสกุล</th> <th>เงินเดือน</th> <th>ค่าจ้าง/วัน</th> <th>เวร</th> <th>รวมค่าจ้าง</th>
-                            <th>โอที</th> <th>หยุด</th> <th>%ขาย</th> <th>จบเคส</th> <th>ค่าชุด</th> <th>ค่าเรียน</th> <th>น้ำ/ไฟ</th> <th>ผิดกฏ</th> <th>อื่นๆ</th> <th>คงเหลือ</th>
+                            <th>ลำดับ</th> <th>ชื่อ-นามสกุล</th> <th>ตำแหน่ง</th> <th>เงินเดือนฐาน</th> <th>เวรที่ทำ</th> <th>วันหยุด (X)</th> <th>รวมค่าจ้างตามเวร</th>
+                            <th>รายได้เพิ่ม (OT/Com)</th> <th>รายการหัก</th> <th>ยอดสุทธิคงเหลือ</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
+                <script>window.print();<\/script>
             </body>
             </html>
         `;
         
         printWindow.document.write(html);
         printWindow.document.close();
-        setTimeout(() => printWindow.print(), 500);
     });
   </script>
  </body>
