@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบบันทึกตารางเวรและคำนวนเงินเดือน</title>
+  <title>ระบบลงทะเบียนกะพนักงาน</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   
@@ -138,15 +138,22 @@
    <div class="p-4 md:p-6 shadow-md bg-white flex-none z-20">
     <header class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
      <div>
-         <h1 class="text-3xl font-bold text-blue-900 mb-1">📅 ระบบบันทึกตารางเวรและคำนวนเงินเดือน</h1>
+         <h1 class="text-3xl font-bold text-blue-900 mb-1">📅 ระบบลงทะเบียนกะพนักงาน</h1>
          <p class="text-sm text-gray-600">
             คลิกที่ช่องวันที่เพื่อวนกะ: ว่าง ➝ D ➝ N ➝ <span class="text-violet-900 font-bold">DN (ดับเบิ้ลกะ/2 เวร)</span> ➝ <span class="text-red-700 font-bold">X (วันหยุด)</span>
             <br>
+            <span class="font-semibold text-blue-700">📌 ระบบคำนวณค่าจ้างต่อวันโดยหักวันหยุดประจำ 4 วันต่อเดือนแล้ว</span>
         </p>
      </div>
+     
      <div class="flex flex-col md:flex-row items-start md:items-center gap-2">
          <div class="flex items-center gap-3 bg-blue-50 p-2 rounded-lg border border-blue-200">
-             <label for="month-select" class="block text-sm font-semibold text-blue-800">เลือกเดือน:</label> 
+             
+             <label for="year-select" class="block text-sm font-semibold text-blue-800">เลือกปี:</label> 
+             <select id="year-select" class="px-3 py-1 border border-blue-300 rounded text-blue-900 font-semibold focus:ring-2 focus:ring-blue-500"> 
+                 </select>
+
+             <label for="month-select" class="block text-sm font-semibold text-blue-800">เดือน:</label> 
              <select id="month-select" class="px-3 py-1 border border-blue-300 rounded text-blue-900 font-semibold focus:ring-2 focus:ring-blue-500"> 
                  <option value="1">ม.ค.</option> <option value="2">ก.พ.</option> <option value="3">มี.ค.</option> 
                  <option value="4">เม.ย.</option> <option value="5">พ.ค.</option> <option value="6">มิ.ย.</option> 
@@ -242,8 +249,8 @@
 
   <script>
     // --- Database Logic (LocalStorage) ---
-    // Change key for new logic (fixed 4 days off)
-    const DB_KEY = 'shift_app_db_complete_v8_4days_off'; 
+    // NEW KEY: Reflects ability to store data across multiple years
+    const DB_KEY = 'shift_app_db_complete_v9_with_year'; 
     
     function loadData() {
         const data = localStorage.getItem(DB_KEY);
@@ -256,8 +263,12 @@
 
     // --- State Management ---
     let employees = [];
+    const currentADYear = new Date().getFullYear();
+    
+    // Set default to current month and year (converted to Thai year)
     let currentMonth = new Date().getMonth() + 1;
-    let currentYear = new Date().getFullYear();
+    let currentYear = currentADYear + 543; // Default to current Thai year (e.g., 2025 -> 2568)
+    
     let daysInMonth = 31;
     
     const daysPerMonth = {
@@ -265,17 +276,32 @@
       7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
     };
 
-    function getDaysInMonth(month, year) {
+    function getDaysInMonth(month, thaiYear) {
+        // Convert Thai Year (2568) to AD Year (2025) for Leap Year calculation
+        const adYear = thaiYear - 543;
+        
         if (month === 2) {
-            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0) ? 29 : 28;
+            return (adYear % 4 === 0 && adYear % 100 !== 0) || (adYear % 400 === 0) ? 29 : 28;
         }
         return daysPerMonth[month];
     }
-
+    
     // --- Initialization ---
     window.addEventListener('load', () => {
         const monthSelect = document.getElementById('month-select');
+        const yearSelect = document.getElementById('year-select');
+
+        // Populate Year Dropdown (e.g., 2567-2573)
+        for (let y = currentADYear - 1; y <= currentADYear + 5; y++) {
+            const thaiYear = y + 543;
+            const option = document.createElement('option');
+            option.value = thaiYear;
+            option.textContent = thaiYear;
+            yearSelect.appendChild(option);
+        }
+
         monthSelect.value = currentMonth;
+        yearSelect.value = currentYear; // Set to current Thai year
         
         employees = loadData();
         updateConfig();
@@ -283,6 +309,12 @@
         
         monthSelect.addEventListener('change', (e) => {
             currentMonth = parseInt(e.target.value);
+            updateConfig();
+            renderEmployeeTable();
+        });
+
+        yearSelect.addEventListener('change', (e) => {
+            currentYear = parseInt(e.target.value);
             updateConfig();
             renderEmployeeTable();
         });
@@ -316,6 +348,7 @@
         return '';
     }
 
+    // Key now includes the year (e.g., '12-2568')
     function getMonthKey() {
         return `${currentMonth}-${currentYear}`;
     }
@@ -348,9 +381,7 @@
         const shifts = getShifts(emp);
         const shiftsThisMonth = shifts.slice(0, daysInMonth);
         
-        // ** LOGIC UPDATE: Calculate days to be paid based on 4 fixed days off **
-        // Ensure this doesn't result in 0 or negative daysToPay for short months, 
-        // though typically a salary is paid based on > 4 working weeks.
+        // ** LOGIC: Calculate days to be paid based on 4 fixed days off **
         const daysToPay = Math.max(1, daysInMonth - 4); 
         
         // Calculate total shift units
@@ -365,7 +396,7 @@
             }
         });
         
-        // ** UPDATED: Daily Rate Calculation **
+        // ** Daily Rate Calculation **
         // Base Salary is divided by working days (DaysInMonth - 4)
         const dailyRate = (emp.base_salary || 0) / daysToPay; 
         
@@ -553,6 +584,7 @@
     document.getElementById('print-report-btn').addEventListener('click', () => {
         const printWindow = window.open('', '', 'width=1200,height=800');
         const monthName = document.getElementById('month-select').options[document.getElementById('month-select').selectedIndex].text;
+        const year = document.getElementById('year-select').value;
         
         const rows = employees.map((emp, i) => {
             const stats = calculateStats(emp);
@@ -575,7 +607,7 @@
         const html = `
             <html>
             <head>
-                <title>รายงานประจำเดือน ${monthName}</title>
+                <title>รายงานประจำเดือน ${monthName} ปี ${year}</title>
                 <style>
                     body { font-family: 'Sarabun', sans-serif; padding: 20px; font-size: 14px; }
                     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -585,7 +617,7 @@
                 </style>
             </head>
             <body>
-                <h1>รายงานสรุปรายได้พนักงาน ประจำเดือน ${monthName}</h1>
+                <h1>รายงานสรุปรายได้พนักงาน ประจำเดือน ${monthName} ปี ${year}</h1>
                 <table>
                     <thead>
                         <tr>
