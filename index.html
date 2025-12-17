@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="th" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกตารางเวรและเงินเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+    .shift-cell { cursor: pointer; transition: all 0.1s; user-select: none; font-size: 12px; height: 35px; min-width: 32px; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; }
+    .shift-d { background-color: #fef3c7; color: #92400e; font-weight: 700; }
+    .shift-n { background-color: #dbeafe; color: #1e40af; font-weight: 700; }
+    .shift-x { background-color: #fecaca; color: #b91c1c; font-weight: 700; }
+    .shift-dn { background-color: #a78bfa; color: #312e81; font-weight: 700; border: 1px dashed #6d28d9; }
+    .shift-empty { background-color: #f9fafb; color: #d1d5db; }
+    .table-wrapper { overflow: auto; max-height: calc(100vh - 280px); border: 1px solid #e2e8f0; border-radius: 12px; background: white; }
+    table { border-collapse: separate; border-spacing: 0; width: max-content; }
+    th { position: sticky; top: 0; background-color: #1e3a8a; color: white; z-index: 20; padding: 10px; font-size: 13px; border-bottom: 2px solid #0f172a; }
+    .sticky-1 { position: sticky; left: 0; z-index: 30; background: #1e3a8a !important; min-width: 60px; }
+    .sticky-2 { position: sticky; left: 60px; z-index: 30; background: #1e3a8a !important; min-width: 180px; }
+    .sticky-3 { position: sticky; left: 240px; z-index: 30; background: #1e3a8a !important; min-width: 140px; }
+    td.sticky-1, td.sticky-2, td.sticky-3 { background: white !important; color: #1e293b; border-right: 1px solid #e2e8f0; }
+    tfoot td { position: sticky; bottom: 0; z-index: 40; border-top: 2px solid #334155; }
+    .hidden-view { display: none !important; }
+    .editable-val { cursor: pointer; color: #2563eb; font-weight: bold; }
+    @media print { .no-print { display: none !important; } }
+  </style>
+ </head>
+ <body class="h-full">
+
+  <div id="branch-screen" class="h-screen flex flex-col items-center justify-center p-6 bg-slate-100 no-print">
+    <h1 class="text-4xl font-black text-blue-900 mb-12 uppercase tracking-tight">ระบบบันทึกตารางเวรและเงินเดือน</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
+        <button onclick="initApp(1)" class="bg-white p-12 rounded-3xl shadow-2xl border-t-8 border-blue-600 hover:scale-105 transition-transform text-center">
+            <span class="text-6xl block mb-4">🏢</span>
+            <span class="text-2xl font-bold text-gray-800">สาขาที่ 1</span>
+        </button>
+        <button onclick="initApp(2)" class="bg-white p-12 rounded-3xl shadow-2xl border-t-8 border-emerald-600 hover:scale-105 transition-transform text-center">
+            <span class="text-6xl block mb-4">🏬</span>
+            <span class="text-2xl font-bold text-gray-800">สาขาที่ 2</span>
+        </button>
+    </div>
+  </div>
+
+  <div id="main-app" class="hidden-view h-full flex flex-col overflow-hidden">
+    <div class="bg-white p-4 shadow-md z-40 no-print">
+        <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+            <div class="flex items-center gap-4">
+                <button onclick="location.reload()" class="bg-gray-100 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200">🏠 เปลี่ยนสาขา</button>
+                <h1 id="branch-title" class="text-2xl font-bold text-blue-900 border-l-4 border-blue-600 pl-4"></h1>
+            </div>
+            <div class="flex items-center gap-2 bg-blue-50 p-2 rounded-xl border border-blue-200">
+                <select id="year-select" onchange="loadMonthlyData()" class="px-2 py-1 rounded bg-white font-bold border"></select>
+                <select id="month-select" onchange="loadMonthlyData()" class="px-2 py-1 rounded bg-white font-bold border"></select>
+                <button onclick="printReport()" class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-emerald-700">📊 ออกรายงาน</button>
+            </div>
+        </header>
+
+        <form id="add-form" class="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <input type="text" id="in-name" placeholder="ชื่อ-นามสกุล" required class="p-2 rounded border focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="in-pos" placeholder="ตำแหน่ง" required class="p-2 rounded border focus:ring-2 focus:ring-blue-500 outline-none">
+            <select id="in-type" class="p-2 rounded border font-bold text-blue-800 bg-white">
+                <option value="monthly">พนักงานรายเดือน</option>
+                <option value="daily">พนักงานรายวัน</option>
+            </select>
+            <input type="number" id="in-salary" placeholder="เงินเดือน/ค่าจ้าง" required class="p-2 rounded border focus:ring-2 focus:ring-blue-500 outline-none">
+            <button type="submit" class="bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md">เพิ่มรายชื่อ</button>
+        </form>
+    </div>
+
+    <div class="flex-1 p-4 overflow-hidden">
+        <div class="table-wrapper shadow-2xl">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sticky-1">ลำดับ</th>
+                        <th class="sticky-2 text-left">ชื่อ-นามสกุล</th>
+                        <th class="sticky-3 text-left">ตำแหน่ง</th>
+                        <th id="days-header-row" class="p-0">วันที่</th>
+                        <th class="bg-slate-700 px-4">ฐานเงินเดือน</th>
+                        <th class="bg-slate-700 px-4">ค่าจ้าง/วัน</th>
+                        <th class="bg-blue-800 px-4 border-l-2 border-blue-400">จำนวนเวร</th>
+                        <th class="bg-blue-900 px-4">รวมค่าจ้าง</th>
+                        <th class="bg-indigo-600 px-4">โอที</th>
+                        <th class="bg-red-600 px-4">หยุด(X)</th>
+                        <th class="bg-indigo-600 px-4">%ขาย</th>
+                        <th class="bg-indigo-600 px-4">จบเคส</th>
+                        <th class="bg-orange-600 px-4">ค่าชุด</th>
+                        <th class="bg-orange-600 px-4">ค่าเรียน</th>
+                        <th class="bg-orange-600 px-4">น้ำ/ไฟ</th>
+                        <th class="bg-orange-600 px-4">ผิดกฎ</th>
+                        <th class="bg-orange-600 px-4">อื่นๆ</th>
+                        <th class="bg-green-700 px-4 font-bold">คงเหลือสุทธิ</th>
+                        <th class="bg-slate-800 px-4">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="emp-tbody"></tbody>
+                <tfoot id="table-footer"></tfoot>
+            </table>
+        </div>
+    </div>
+  </div>
+
+  <div id="edit-modal" class="hidden-view fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+        <h3 class="text-xl font-bold text-blue-900 mb-4" id="modal-label">แก้ไขข้อมูล</h3>
+        <input type="number" id="edit-value" class="w-full p-4 border-2 border-blue-500 rounded-xl text-3xl font-bold text-center mb-6">
+        <div class="flex gap-3">
+            <button onclick="saveEdit()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">บันทึก</button>
+            <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-300">ยกเลิก</button>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    let currentBranch = 0;
+    let employees = [];
+    const currentYearThai = new Date().getFullYear() + 543;
+    const months = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+    const yearSel = document.getElementById('year-select');
+    for(let y=currentYearThai-1; y<=currentYearThai+5; y++){
+        const o = document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o);
+    }
+    yearSel.value = currentYearThai;
+
+    const monthSel = document.getElementById('month-select');
+    months.forEach((m, i) => {
+        const o = document.createElement('option'); o.value=i+1; o.textContent=m; monthSel.appendChild(o);
+    });
+    monthSel.value = new Date().getMonth() + 1;
+
+    function initApp(b) {
+        currentBranch = b;
+        document.getElementById('branch-screen').classList.add('hidden-view');
+        document.getElementById('main-app').classList.remove('hidden-view');
+        document.getElementById('branch-title').textContent = `สาขาที่ ${b}`;
+        loadMonthlyData();
+    }
+
+    function loadMonthlyData() {
+        const m = document.getElementById('month-select').value;
+        const y = document.getElementById('year-select').value;
+        const key = `br${currentBranch}_m${m}_y${y}`;
+        const stored = localStorage.getItem(key);
+        if(stored) {
+            employees = JSON.parse(stored);
+        } else {
+            const pm = m == 1 ? 12 : m - 1;
+            const py = m == 1 ? y - 1 : y;
+            const prevData = localStorage.getItem(`br${currentBranch}_m${pm}_y${py}`);
+            if(prevData && confirm(`ต้องการคัดลอกรายชื่อจากเดือนที่แล้วหรือไม่?`)) {
+                employees = JSON.parse(prevData).map(e => ({ id: e.id, name: e.name, pos: e.pos, type: e.type, salary: e.salary, shifts: {}, data: {} }));
+            } else { employees = []; }
+        }
+        renderTable();
+    }
+
+    function calculateStats(emp) {
+        const m = document.getElementById('month-select').value;
+        const y = document.getElementById('year-select').value;
+        const daysInMonth = new Date(y-543, m, 0).getDate();
+        let unitCount = 0, offCount = 0;
+        for(let i=0; i<31; i++) {
+            const s = emp.shifts[i] || '';
+            if(i < daysInMonth) {
+                if(s==='D' || s==='N') unitCount++;
+                else if(s==='DN') unitCount += 2;
+                else if(s==='X') offCount++;
+            }
+        }
+        const dailyRate = emp.type === 'daily' ? emp.salary : (emp.salary / (daysInMonth - 4));
+        const totalWage = dailyRate * unitCount;
+        const d = emp.data || {};
+        const plus = (d.ot||0) + (d.com||0) + (d.case||0);
+        const minus = (d.unif||0) + (d.lear||0) + (d.util||0) + (d.fine||0) + (d.othe||0);
+        return { dailyRate, totalWage, offCount, unitCount, net: totalWage + plus - minus };
+    }
+
+    function renderTable() {
+        const m = document.getElementById('month-select').value;
+        const y = document.getElementById('year-select').value;
+        const days = new Date(y-543, m, 0).getDate();
+        
+        let hHtml = '<div class="flex">';
+        for(let i=1; i<=31; i++) hHtml += `<div class="shift-cell w-[32px] border-r border-blue-400 bg-blue-800 text-[10px] ${i>days?'invisible':''}">${i}</div>`;
+        document.getElementById('days-header-row').innerHTML = hHtml + '</div>';
+
+        const tbody = document.getElementById('emp-tbody');
+        tbody.innerHTML = '';
+
+        let tSalary = 0, tUnit = 0, tWage = 0, tOt = 0, tCom = 0, tCase = 0, tUnif = 0, tLear = 0, tUtil = 0, tFine = 0, tOthe = 0, tNet = 0;
+
+        employees.forEach((emp, idx) => {
+            const st = calculateStats(emp);
+            const d = emp.data || {};
+            
+            tSalary += (emp.salary || 0); tUnit += (st.unitCount || 0); tWage += (st.totalWage || 0);
+            tOt += (d.ot || 0); tCom += (d.com || 0); tCase += (d.case || 0);
+            tUnif += (d.unif || 0); tLear += (d.lear || 0); tUtil += (d.util || 0); tFine += (d.fine || 0); tOthe += (d.othe || 0);
+            tNet += st.net;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="sticky-1 text-center font-bold">${idx + 1}</td>
+                <td class="sticky-2 font-bold">${emp.name}<br><span class="text-[10px] ${emp.type==='daily'?'text-amber-600':'text-blue-500'}">${emp.type==='daily'?'รายวัน':'รายเดือน'}</span></td>
+                <td class="sticky-3 text-gray-500 text-xs">${emp.pos}</td>
+                <td class="p-0 border-r"><div class="flex">${renderShiftCells(emp, days)}</div></td>
+                <td class="text-right px-4 editable-val" onclick="openEdit('${emp.id}','salary','ฐานเงินเดือน')">${fmt(emp.salary)}</td>
+                <td class="text-right px-4 text-slate-700 font-semibold">${fmt(st.dailyRate)}</td>
+                <td class="text-right px-4 font-bold text-blue-900 bg-blue-50 border-l-2 border-blue-200">${st.unitCount}</td>
+                <td class="text-right px-4 font-bold text-blue-700 bg-blue-100">${fmt(st.totalWage)}</td>
+                <td class="text-right px-4 editable-val text-indigo-600" onclick="openEdit('${emp.id}','ot','โอที')">${fmt(d.ot)}</td>
+                <td class="text-center px-4 font-bold text-red-600">${st.offCount}</td>
+                <td class="text-right px-4 editable-val text-indigo-600" onclick="openEdit('${emp.id}','com','%ขาย')">${fmt(d.com)}</td>
+                <td class="text-right px-4 editable-val text-indigo-600" onclick="openEdit('${emp.id}','case','จบเคส')">${fmt(d.case)}</td>
+                <td class="text-right px-4 editable-val text-red-500" onclick="openEdit('${emp.id}','unif','ค่าชุด')">${fmt(d.unif)}</td>
+                <td class="text-right px-4 editable-val text-red-500" onclick="openEdit('${emp.id}','lear','ค่าเรียน')">${fmt(d.lear)}</td>
+                <td class="text-right px-4 editable-val text-red-500" onclick="openEdit('${emp.id}','util','น้ำ/ไฟ')">${fmt(d.util)}</td>
+                <td class="text-right px-4 editable-val text-red-500" onclick="openEdit('${emp.id}','fine','ผิดกฎ')">${fmt(d.fine)}</td>
+                <td class="text-right px-4 editable-val text-red-500" onclick="openEdit('${emp.id}','othe','อื่นๆ')">${fmt(d.othe)}</td>
+                <td class="text-right px-4 font-bold text-white ${st.net>=0?'bg-green-600':'bg-red-600'}">${fmt(st.net)}</td>
+                <td class="text-center px-4"><button onclick="delEmp('${emp.id}')" class="text-red-500 font-bold text-xs hover:underline">ลบ</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('table-footer').innerHTML = `
+            <tr class="font-bold border-t-2 border-slate-400">
+                <td colspan="4" class="sticky-1 text-center bg-slate-200 py-3">รวมทั้งสิ้น (${employees.length} คน)</td>
+                <td class="text-right px-4 bg-slate-200">${fmt(tSalary)}</td>
+                <td class="bg-slate-200"></td>
+                <td class="text-right px-4 bg-blue-200 text-blue-900 border-l-2 border-blue-300">${tUnit}</td>
+                <td class="text-right px-4 bg-blue-300 text-blue-900">${fmt(tWage)}</td>
+                <td class="text-right px-4 bg-slate-200 text-indigo-700">${fmt(tOt)}</td>
+                <td class="bg-slate-200"></td>
+                <td class="text-right px-4 bg-slate-200 text-indigo-700">${fmt(tCom)}</td>
+                <td class="text-right px-4 bg-slate-200 text-indigo-700">${fmt(tCase)}</td>
+                <td class="text-right px-4 bg-slate-200 text-red-600">${fmt(tUnif)}</td>
+                <td class="text-right px-4 bg-slate-200 text-red-600">${fmt(tLear)}</td>
+                <td class="text-right px-4 bg-slate-200 text-red-600">${fmt(tUtil)}</td>
+                <td class="text-right px-4 bg-slate-200 text-red-600">${fmt(tFine)}</td>
+                <td class="text-right px-4 bg-slate-200 text-red-600">${fmt(tOthe)}</td>
+                <td class="text-right px-4 bg-green-700 text-white font-black">${fmt(tNet)}</td>
+                <td class="bg-slate-200"></td>
+            </tr>
+        `;
+        localStorage.setItem(`br${currentBranch}_m${m}_y${y}`, JSON.stringify(employees));
+    }
+
+    function renderShiftCells(emp, limit) {
+        let h = '';
+        for(let i=0; i<31; i++) {
+            const s = emp.shifts[i] || '';
+            let cls = 'shift-empty';
+            if(s==='D') cls='shift-d'; else if(s==='N') cls='shift-n'; else if(s==='DN') cls='shift-dn'; else if(s==='X') cls='shift-x';
+            h += `<div class="shift-cell ${cls} ${i>=limit?'invisible':''}" onclick="toggleShift('${emp.id}',${i})">${s}</div>`;
+        }
+        return h;
+    }
+
+    function toggleShift(id, day) {
+        const emp = employees.find(e => e.id === id);
+        const cycle = ['', 'D', 'N', 'DN', 'X'];
+        let cur = cycle.indexOf(emp.shifts[day] || '');
+        emp.shifts[day] = cycle[(cur + 1) % cycle.length];
+        renderTable();
+    }
+
+    document.getElementById('add-form').onsubmit = (e) => {
+        e.preventDefault();
+        employees.push({ id: Date.now().toString(), name: document.getElementById('in-name').value, pos: document.getElementById('in-pos').value, type: document.getElementById('in-type').value, salary: parseFloat(document.getElementById('in-salary').value), shifts: {}, data: {} });
+        e.target.reset(); renderTable();
+    };
+
+    let editRef = null;
+    function openEdit(id, field, label) {
+        editRef = { id, field };
+        const emp = employees.find(e => e.id === id);
+        document.getElementById('modal-label').textContent = `แก้ไข ${label}`;
+        document.getElementById('edit-value').value = field === 'salary' ? emp.salary : (emp.data[field] || 0);
+        document.getElementById('edit-modal').classList.remove('hidden-view');
+        document.getElementById('edit-value').focus();
+    }
+    function saveEdit() {
+        const emp = employees.find(e => e.id === editRef.id);
+        const v = parseFloat(document.getElementById('edit-value').value) || 0;
+        if(editRef.field==='salary') emp.salary = v; else emp.data[editRef.field] = v;
+        closeModal(); renderTable();
+    }
+    function closeModal() { document.getElementById('edit-modal').classList.add('hidden-view'); }
+    function delEmp(id) { if(confirm('ลบพนักงานคนนี้ออกจากเดือนนี้?')) { employees=employees.filter(e=>e.id!==id); renderTable(); } }
+    function fmt(n) { return (n || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2}); }
+    function printReport() { window.print(); }
+  </script>
+ </body>
+</html>
