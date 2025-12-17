@@ -3,150 +3,127 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจัดการกะและเงินเดือนแยกสาขา (Hybrid)</title>
+  <title>ระบบลงทะเบียนกะพนักงานแยกสาขา</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   
   <style>
-    body { font-family: 'Sarabun', sans-serif; transition: all 0.3s ease; }
-    .branch-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-    .branch-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    body { font-family: 'Sarabun', sans-serif; }
+    .branch-card { transition: all 0.2s; cursor: pointer; }
+    .branch-card:hover { transform: translateY(-5px); shadow: 0 10px 15px rgba(0,0,0,0.1); }
     
-    /* Table & Shift Styles */
-    .shift-cell { cursor: pointer; user-select: none; font-size: 11px; height: 32px; min-width: 30px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
-    .shift-d { background-color: #fef3c7; color: #92400e; font-weight: bold; }
-    .shift-n { background-color: #dbeafe; color: #1e40af; font-weight: bold; }
-    .shift-dn { background-color: #a78bfa; color: #ffffff; font-weight: bold; }
-    .shift-x { background-color: #fecaca; color: #b91c1c; font-weight: bold; }
+    .shift-cell { cursor: pointer; user-select: none; font-size: 12px; height: 32px; min-width: 30px; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; }
+    .shift-d { background-color: #fef3c7; color: #92400e; font-weight: 700; }
+    .shift-n { background-color: #dbeafe; color: #1e40af; font-weight: 700; }
+    .shift-x { background-color: #fecaca; color: #b91c1c; font-weight: 700; }
+    .shift-dn { background-color: #a78bfa; color: #312e81; font-weight: 700; border: 1px dashed #6d28d9; }
     .shift-empty { background-color: #f9fafb; color: #d1d5db; }
 
-    .table-wrapper { overflow: auto; max-height: calc(100vh - 350px); border: 1px solid #e5e7eb; border-radius: 8px; }
-    table { border-collapse: separate; border-spacing: 0; min-width: 1900px; }
-    th { position: sticky; top: 0; background: #1e3a8a; color: white; z-index: 20; padding: 10px; font-size: 13px; }
+    .table-wrapper { overflow: auto; max-height: calc(100vh - 280px); border: 1px solid #e5e7eb; border-radius: 0.5rem; }
+    table { border-collapse: separate; border-spacing: 0; min-width: 1600px; }
+    th { position: sticky; top: 0; background-color: #1e3a8a; color: white; z-index: 10; white-space: nowrap; padding: 8px; }
     
-    .sticky-col-1 { position: sticky; left: 0; z-index: 25; background: #1e3a8a !important; min-width: 60px; }
-    .sticky-col-2 { position: sticky; left: 60px; z-index: 25; background: #1e3a8a !important; min-width: 180px; }
-    .sticky-col-3 { position: sticky; left: 240px; z-index: 25; background: #1e3a8a !important; min-width: 100px; }
-    
-    td.sticky-col-1 { background: #f8fafc !important; }
-    td.sticky-col-2 { background: white !important; }
-    td.sticky-col-3 { background: white !important; }
+    th:first-child, td:first-child { position: sticky; left: 0; z-index: 12; background-color: #1e3a8a; color: white; min-width: 70px; }
+    th:nth-child(2), td:nth-child(2) { position: sticky; left: 70px; z-index: 12; background-color: #1e3a8a; color: white; min-width: 180px; }
+    th:nth-child(3), td:nth-child(3) { position: sticky; left: 250px; z-index: 12; background-color: #1e3a8a; color: white; min-width: 120px; }
+    td:nth-child(3) { background-color: white !important; color: black; z-index: 11; }
 
     .hidden-view { display: none !important; }
-    .badge-monthly { background: #dcfce7; color: #166534; padding: 2px 6px; rounded: 4px; font-size: 10px; }
-    .badge-daily { background: #fef9c3; color: #854d0e; padding: 2px 6px; rounded: 4px; font-size: 10px; }
   </style>
  </head>
- <body class="bg-gray-100 h-full">
+ <body class="h-full bg-gray-50">
 
   <div id="branch-selection-page" class="h-screen flex flex-col items-center justify-center p-6">
-    <div class="text-center mb-10">
-        <h1 class="text-4xl font-extrabold text-blue-900 mb-2">ระบบจัดการพนักงานแยกสาขา</h1>
-        <p class="text-gray-600">กรุณาเลือกสาขาเพื่อเริ่มการทำงาน</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-        <div onclick="enterBranch(1)" class="branch-card bg-white p-10 rounded-2xl border-t-8 border-blue-600 text-center shadow-lg">
-            <div class="text-5xl mb-4">🏪</div>
-            <h2 class="text-2xl font-bold text-gray-800">สาขาที่ 1</h2>
-            <button class="mt-6 bg-blue-600 text-white px-8 py-2 rounded-full font-semibold hover:bg-black transition">เข้าใช้งาน</button>
+    <h1 class="text-3xl font-bold text-blue-900 mb-8 text-center">ระบบจัดการกะและเงินเดือนพนักงาน</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+        <div onclick="enterBranch(1)" class="branch-card bg-white p-8 rounded-xl shadow-md border-t-4 border-blue-600 text-center">
+            <span class="text-4xl">🏪</span>
+            <h2 class="text-xl font-bold mt-4">สาขาที่ 1</h2>
+            <p class="text-gray-500 text-sm mt-2">จัดการตารางเวรและเงินเดือน</p>
         </div>
-        <div onclick="enterBranch(2)" class="branch-card bg-white p-10 rounded-2xl border-t-8 border-emerald-600 text-center shadow-lg">
-            <div class="text-5xl mb-4">🏬</div>
-            <h2 class="text-2xl font-bold text-gray-800">สาขาที่ 2</h2>
-            <button class="mt-6 bg-emerald-600 text-white px-8 py-2 rounded-full font-semibold hover:bg-black transition">เข้าใช้งาน</button>
+        <div onclick="enterBranch(2)" class="branch-card bg-white p-8 rounded-xl shadow-md border-t-4 border-emerald-600 text-center">
+            <span class="text-4xl">🏬</span>
+            <h2 class="text-xl font-bold mt-4">สาขาที่ 2</h2>
+            <p class="text-gray-500 text-sm mt-2">จัดการตารางเวรและเงินเดือน</p>
         </div>
     </div>
   </div>
 
-  <div id="main-app-page" class="hidden-view h-screen flex flex-col overflow-hidden">
+  <div id="main-app-page" class="hidden-view h-full flex flex-col">
+   <div class="p-4 md:p-6 shadow-md bg-white flex-none z-20">
+    <header class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+     <div>
+         <div class="flex items-center gap-3">
+            <button onclick="goBack()" class="text-blue-600 hover:underline text-sm font-bold">← สลับสาขา</button>
+            <h1 id="branch-display-title" class="text-3xl font-bold text-blue-900"></h1>
+         </div>
+         <p class="text-sm text-gray-600">
+            คลิกที่ช่องวันที่เพื่อวนกะ: ว่าง ➝ D ➝ N ➝ <span class="text-violet-900 font-bold">DN</span> ➝ <span class="text-red-700 font-bold">X</span>
+            <br>
+            <span class="font-semibold text-blue-700">📌 รายเดือน: หักวันหยุด 4 วันแล้ว | รายวัน: คำนวณตามจำนวนเวรจริง</span>
+        </p>
+     </div>
+     <div class="flex flex-col md:flex-row items-start md:items-center gap-2">
+         <div class="flex items-center gap-3 bg-blue-50 p-2 rounded-lg border border-blue-200">
+             <label class="block text-sm font-semibold text-blue-800">ปี พ.ศ.:</label>
+             <select id="year-select" class="px-3 py-1 border border-blue-300 rounded text-blue-900 font-semibold focus:ring-2 focus:ring-blue-500"></select>
+             <label class="block text-sm font-semibold text-blue-800">เดือน:</label> 
+             <select id="month-select" class="px-3 py-1 border border-blue-300 rounded text-blue-900 font-semibold focus:ring-2 focus:ring-blue-500"> 
+                 <option value="1">ม.ค.</option><option value="2">ก.พ.</option><option value="3">มี.ค.</option> 
+                 <option value="4">เม.ย.</option><option value="5">พ.ค.</option><option value="6">มิ.ย.</option> 
+                 <option value="7">ก.ค.</option><option value="8">ส.ค.</option><option value="9">ก.ย.</option> 
+                 <option value="10">ต.ค.</option><option value="11">พ.ย.</option><option value="12">ธ.ค.</option> 
+             </select>
+             <span id="days-display" class="text-xs text-gray-600 font-medium bg-white px-2 py-1 rounded border">31 วัน</span>
+         </div>
+         <button id="print-report-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 shadow-md">📊 รายงาน</button>
+     </div>
+    </header>
     
-    <nav class="bg-white border-b px-6 py-3 flex justify-between items-center shadow-sm z-30">
-        <div class="flex items-center gap-4">
-            <button onclick="goBackToMenu()" class="text-gray-500 hover:text-blue-600 font-bold">← สลับสาขา</button>
-            <h2 id="branch-title" class="text-xl font-bold text-blue-900">จัดการสาขา</h2>
-        </div>
-        <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-            <span class="text-xs font-bold px-2 text-gray-500">งวดประจำปี:</span>
-            <select id="year-select" class="bg-transparent font-bold px-2 py-1 outline-none text-blue-800"></select>
-            <select id="month-select" class="bg-transparent font-bold px-2 py-1 outline-none text-blue-800">
-                <option value="1">ม.ค.</option><option value="2">ก.พ.</option><option value="3">มี.ค.</option>
-                <option value="4">เม.ย.</option><option value="5">พ.ค.</option><option value="6">มิ.ย.</option>
-                <option value="7">ก.ค.</option><option value="8">ส.ค.</option><option value="9">ก.ย.</option>
-                <option value="10">ต.ค.</option><option value="11">พ.ย.</option><option value="12">ธ.ค.</option>
-            </select>
-        </div>
-    </nav>
-
-    <div class="p-6 bg-white flex-none border-b">
-        <form id="add-employee-form" class="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ชื่อ-นามสกุล</label>
-                <input type="text" id="employee-name" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ตำแหน่ง</label>
-                <input type="text" id="employee-position" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ประเภทการจ้าง</label>
-                <select id="employee-type" class="w-full border p-2 rounded text-sm font-bold bg-blue-50">
-                    <option value="monthly">รายเดือน (Monthly)</option>
-                    <option value="daily">รายวัน (Daily)</option>
-                </select>
-            </div>
-            <div>
-                <label id="salary-label" class="block text-xs font-bold text-gray-500 mb-1">เงินเดือน/ค่าแรงต่อวัน</label>
-                <input type="number" id="base-salary" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น 15000 หรือ 400">
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit" class="flex-1 bg-blue-800 text-white px-4 py-2 rounded font-bold text-sm h-[38px] hover:bg-black transition">เพิ่ม +</button>
-                <button type="button" id="print-report-btn" class="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm h-[38px] hover:bg-green-700">รายงาน 📊</button>
-            </div>
-        </form>
+    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+     <form id="add-employee-form" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">ชื่อ-นามสกุล</label> 
+          <input type="text" id="employee-name" required class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">ตำแหน่ง</label> 
+          <input type="text" id="employee-position" required class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">ประเภท</label> 
+          <select id="employee-type" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-bold">
+              <option value="monthly">รายเดือน (หักวันหยุด 4 วัน)</option>
+              <option value="daily">รายวัน (ตามวันทำงานจริง)</option>
+          </select>
+      </div>
+      <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">เงินเดือน/ค่าจ้างรายวัน</label> 
+          <input type="number" id="base-salary" required class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div class="flex items-end">
+          <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 h-10 shadow-md">เพิ่มพนักงาน</button>
+      </div>
+     </form>
     </div>
+   </div>
 
-    <div class="flex-1 p-6 overflow-hidden flex flex-col">
-        <div class="table-wrapper bg-white shadow-xl">
-            <table>
-                <thead>
-                    <tr id="table-head-row">
-                        <th class="sticky-col-1">#</th>
-                        <th class="sticky-col-2">ชื่อ-นามสกุล</th>
-                        <th class="sticky-col-3">ประเภท</th>
-                        <th id="days-header-container" class="p-0"></th>
-                        <th>ฐานเงิน/วัน</th>
-                        <th>ค่าแรง/เวร</th>
-                        <th>เวร</th>
-                        <th class="bg-blue-700">รวมค่าจ้าง</th>
-                        <th>โอที</th>
-                        <th>หยุด(X)</th>
-                        <th>%ขาย/เคส</th>
-                        <th class="bg-red-800">หัก</th>
-                        <th class="bg-green-700">สุทธิ</th>
-                        <th>จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="employee-tbody"></tbody>
-            </table>
-        </div>
-        <div class="mt-4 flex gap-4 text-xs">
-            <span class="flex items-center gap-1"><span class="w-3 h-3 shift-d"></span> เวรเช้า (D)</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 shift-n"></span> เวรดึก (N)</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 shift-dn"></span> ดับเบิ้ล (DN)</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 shift-x"></span> วันหยุด (X)</span>
-        </div>
+   <div class="flex-1 px-4 md:px-6 pb-6 overflow-hidden flex flex-col">
+    <div class="table-wrapper bg-white shadow-lg mt-4">
+      <table>
+       <thead>
+        <tr>
+         <th>ลำดับ</th><th>ชื่อ-นามสกุล</th><th>ตำแหน่ง</th>
+         <th id="days-header"></th>
+         <th>เงินเดือน</th><th>ค่าจ้าง/วัน</th><th>จำนวนเวร</th>
+         <th class="bg-blue-800">รวมค่าจ้าง</th><th>โอที</th><th>หยุด</th><th>%ขาย</th>
+         <th class="bg-red-700">หักรวม</th><th class="bg-green-700">คงเหลือ</th><th>จัดการ</th>
+        </tr>
+       </thead>
+       <tbody id="employee-tbody"></tbody>
+      </table>
     </div>
-  </div>
-
-  <div id="edit-modal" class="hidden-view fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-    <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl">
-        <h3 id="modal-title" class="font-bold text-lg mb-4 text-blue-900">แก้ไขข้อมูล</h3>
-        <input type="number" id="edit-value" class="w-full border-2 border-blue-500 p-3 rounded text-2xl text-center font-bold mb-4 outline-none">
-        <div class="flex gap-2">
-            <button onclick="closeModal()" class="flex-1 py-2 bg-gray-200 rounded font-bold">ยกเลิก</button>
-            <button onclick="saveModal()" class="flex-1 py-2 bg-blue-600 text-white rounded font-bold">บันทึก</button>
-        </div>
-    </div>
+   </div>
   </div>
 
   <script>
@@ -157,7 +134,7 @@
     let selectedMonth = new Date().getMonth() + 1;
     let selectedYear = currentThaiYear;
 
-    const getDBKey = (branch) => `branch_data_${branch}_hybrid_v11`;
+    const getDBKey = (branch) => `shift_system_branch_${branch}_v12`;
 
     window.onload = () => {
         const yearSelect = document.getElementById('year-select');
@@ -168,129 +145,92 @@
         }
         document.getElementById('month-select').value = selectedMonth;
         yearSelect.value = selectedYear;
+        
+        document.getElementById('month-select').onchange = (e) => { selectedMonth = parseInt(e.target.value); renderAll(); };
+        document.getElementById('year-select').onchange = (e) => { selectedYear = parseInt(e.target.value); renderAll(); };
     };
 
     function enterBranch(branchNum) {
         currentBranch = branchNum;
         document.getElementById('branch-selection-page').classList.add('hidden-view');
         document.getElementById('main-app-page').classList.remove('hidden-view');
-        document.getElementById('branch-title').textContent = `🏪 สาขาที่ ${branchNum}`;
+        document.getElementById('branch-display-title').textContent = `📅 สาขาที่ ${branchNum}`;
         employees = JSON.parse(localStorage.getItem(getDBKey(currentBranch)) || '[]');
         renderAll();
     }
 
-    function goBackToMenu() {
+    function goBack() {
         document.getElementById('branch-selection-page').classList.remove('hidden-view');
         document.getElementById('main-app-page').classList.add('hidden-view');
     }
 
-    function getDaysInMonth(m, yThai) {
-        return new Date(yThai - 543, m, 0).getDate();
-    }
-
     function renderAll() {
-        const days = getDaysInMonth(selectedMonth, selectedYear);
-        renderDaysHeader(days);
-        renderTable(days);
-    }
-
-    function renderDaysHeader(daysCount) {
-        const container = document.getElementById('days-header-container');
-        let html = `<div class="flex">`;
-        for(let i=1; i<=31; i++) {
-            const isHidden = i > daysCount ? 'invisible' : '';
-            html += `<div class="flex-none w-[30px] text-center border-r border-blue-400 text-[10px] py-2 ${isHidden}">${i}</div>`;
-        }
-        html += `</div>`;
-        container.innerHTML = html;
-    }
-
-    function renderTable(daysCount) {
-        const tbody = document.getElementById('employee-tbody');
-        tbody.innerHTML = '';
+        const days = new Date(selectedYear - 543, selectedMonth, 0).getDate();
+        document.getElementById('days-display').textContent = `${days} วัน`;
         
-        employees.forEach((emp, idx) => {
-            const stats = calculateStats(emp, daysCount);
+        // Days Header 1-31
+        let headerHtml = '<div class="flex">';
+        for(let i=1; i<=31; i++) {
+            headerHtml += `<div class="${i > days ? 'invisible' : ''} text-center text-[10px] w-[30px] border-r border-blue-400 py-2">${i}</div>`;
+        }
+        document.getElementById('days-header').innerHTML = headerHtml + '</div>';
+
+        const tbody = document.getElementById('employee-tbody');
+        tbody.innerHTML = employees.map((emp, idx) => {
+            const stats = calculateStats(emp, days);
             const monthKey = `${selectedMonth}-${selectedYear}`;
             const shifts = emp.shifts?.[monthKey] || Array(31).fill('');
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-blue-50 border-b";
-
-            tr.innerHTML = `
-                <td class="sticky-col-1 p-2 text-center text-xs font-bold border-r">${idx + 1}</td>
-                <td class="sticky-col-2 p-2 border-r">
-                    <div class="text-sm font-bold text-blue-900">${emp.name}</div>
-                    <div class="text-[10px] text-gray-400">${emp.position}</div>
-                </td>
-                <td class="sticky-col-3 p-2 text-center border-r">
-                    <span class="${emp.type === 'daily' ? 'badge-daily' : 'badge-monthly'}">
-                        ${emp.type === 'daily' ? 'รายวัน' : 'รายเดือน'}
-                    </span>
-                </td>
-            `;
-
-            const shiftContainer = document.createElement('td');
-            shiftContainer.className = "p-0";
-            const shiftFlex = document.createElement('div');
-            shiftFlex.className = "flex";
+            
+            let shiftCells = '<div class="flex">';
             for(let i=0; i<31; i++) {
-                const cell = document.createElement('div');
-                cell.className = `shift-cell flex-none w-[30px] ${i >= daysCount ? 'invisible' : ''} ${getShiftClass(shifts[i])}`;
-                cell.textContent = shifts[i];
-                cell.onclick = () => toggleShift(emp.id, i);
-                shiftFlex.appendChild(cell);
+                const s = shifts[i] || '';
+                const cls = s === 'D' ? 'shift-d' : s === 'N' ? 'shift-n' : s === 'DN' ? 'shift-dn' : s === 'X' ? 'shift-x' : 'shift-empty';
+                shiftCells += `<div onclick="toggleShift('${emp.id}', ${i})" class="${i >= days ? 'invisible' : ''} shift-cell ${cls} w-[30px]">${s}</div>`;
             }
-            shiftContainer.appendChild(shiftFlex);
-            tr.appendChild(shiftContainer);
+            shiftCells += '</div>';
 
-            tr.innerHTML += `
-                <td class="p-2 text-right text-xs font-bold">${fmt(emp.baseSalary)}</td>
-                <td class="p-2 text-right text-xs text-gray-500">${fmt(stats.dailyRate)}</td>
-                <td class="p-2 text-center font-bold text-sm">${stats.totalShifts}</td>
+            return `<tr class="hover:bg-gray-50 bg-white">
+                <td class="p-2 text-center font-bold text-gray-700">${idx + 1}</td>
+                <td class="p-2 font-semibold text-blue-900">${emp.name}</td>
+                <td class="p-2 text-gray-600">${emp.position} <span class="text-[9px] block text-blue-500">${emp.type === 'daily' ? '[รายวัน]' : '[รายเดือน]'}</span></td>
+                <td class="p-0 border-r">${shiftCells}</td>
+                <td class="p-2 text-right">${fmt(emp.baseSalary)}</td>
+                <td class="p-2 text-right text-gray-400 text-xs">${fmt(stats.dailyRate)}</td>
+                <td class="p-2 text-center font-bold">${stats.units}</td>
                 <td class="p-2 text-right font-bold text-blue-700 bg-blue-50">${fmt(stats.wage)}</td>
-                <td class="p-2 text-right cursor-pointer text-green-600" onclick="openEdit('${emp.id}', 'ot')">${fmt(emp.data?.[monthKey]?.ot)}</td>
-                <td class="p-2 text-center font-bold text-red-600">${stats.daysX}</td>
-                <td class="p-2 text-right cursor-pointer text-green-600" onclick="openEdit('${emp.id}', 'com')">${fmt((emp.data?.[monthKey]?.com || 0) + (emp.data?.[monthKey]?.case || 0))}</td>
-                <td class="p-2 text-right cursor-pointer text-red-500" onclick="openEdit('${emp.id}', 'hak')">${fmt(emp.data?.[monthKey]?.hak)}</td>
-                <td class="p-2 text-right font-bold bg-green-100 text-green-800">${fmt(stats.net)}</td>
+                <td class="p-2 text-right text-green-600">${fmt(emp.data?.[monthKey]?.ot)}</td>
+                <td class="p-2 text-center text-red-600 font-bold">${stats.daysX}</td>
+                <td class="p-2 text-right text-green-600">${fmt(emp.data?.[monthKey]?.com)}</td>
+                <td class="p-2 text-right text-red-500">${fmt(emp.data?.[monthKey]?.hak)}</td>
+                <td class="p-2 text-right font-bold text-white ${stats.net >= 0 ? 'bg-green-600' : 'bg-red-600'}">${fmt(stats.net)}</td>
                 <td class="p-2 text-center">
-                    <button onclick="deleteEmp('${emp.id}')" class="text-red-300 hover:text-red-600">✕</button>
+                    <button onclick="deleteEmp('${emp.id}')" class="text-red-500 text-xs font-bold">ลบ</button>
                 </td>
-            `;
-            tbody.appendChild(tr);
-        });
+            </tr>`;
+        }).join('');
     }
 
-    function calculateStats(emp, daysCount) {
+    function calculateStats(emp, daysInMonth) {
         const monthKey = `${selectedMonth}-${selectedYear}`;
         const shifts = emp.shifts?.[monthKey] || [];
-        const data = emp.data?.[monthKey] || { ot:0, com:0, case:0, hak:0 };
-        
-        let units = 0;
-        let daysX = 0;
-        for(let i=0; i<daysCount; i++) {
-            if(shifts[i] === 'D' || shifts[i] === 'N') units += 1;
+        let units = 0, daysX = 0;
+        for(let i=0; i<daysInMonth; i++) {
+            if(shifts[i] === 'D' || shifts[i] === 'N') units++;
             else if(shifts[i] === 'DN') units += 2;
-            else if(shifts[i] === 'X') daysX += 1;
+            else if(shifts[i] === 'X') daysX++;
         }
 
         let dailyRate = 0;
         if(emp.type === 'daily') {
-            dailyRate = emp.baseSalary; // พนักงานรายวัน ใช้ค่าแรงต่อวันตรงๆ
+            dailyRate = emp.baseSalary; // รายวัน = ค่าแรงที่กรอก
         } else {
-            const daysToPay = Math.max(1, daysCount - 4);
-            dailyRate = emp.baseSalary / daysToPay; // พนักงานรายเดือน ใช้สูตรเดิม
+            dailyRate = emp.baseSalary / (daysInMonth - 4); // รายเดือน = สูตรหัก 4 วัน
         }
 
         const wage = units * dailyRate;
-        const net = wage + (data.ot || 0) + (data.com || 0) + (data.case || 0) - (data.hak || 0);
-
-        return { dailyRate, totalShifts: units, wage, daysX, net };
-    }
-
-    function getShiftClass(s) {
-        const map = { 'D':'shift-d', 'N':'shift-n', 'DN':'shift-dn', 'X':'shift-x' };
-        return map[s] || 'shift-empty';
+        const data = emp.data?.[monthKey] || { ot:0, com:0, hak:0 };
+        const net = wage + (data.ot || 0) + (data.com || 0) - (data.hak || 0);
+        return { units, daysX, dailyRate, wage, net };
     }
 
     function toggleShift(empId, dayIdx) {
@@ -298,67 +238,28 @@
         const monthKey = `${selectedMonth}-${selectedYear}`;
         if(!emp.shifts) emp.shifts = {};
         if(!emp.shifts[monthKey]) emp.shifts[monthKey] = Array(31).fill('');
-        
         const cycle = ['', 'D', 'N', 'DN', 'X'];
-        let currentIdx = cycle.indexOf(emp.shifts[monthKey][dayIdx]);
-        emp.shifts[monthKey][dayIdx] = cycle[(currentIdx + 1) % cycle.length];
-        saveAndReload();
+        let cur = cycle.indexOf(emp.shifts[monthKey][dayIdx]);
+        emp.shifts[monthKey][dayIdx] = cycle[(cur + 1) % cycle.length];
+        save(); renderAll();
     }
 
     document.getElementById('add-employee-form').onsubmit = (e) => {
         e.preventDefault();
-        const newEmp = {
+        employees.push({
             id: Date.now().toString(),
             name: document.getElementById('employee-name').value,
             position: document.getElementById('employee-position').value,
             type: document.getElementById('employee-type').value,
             baseSalary: parseFloat(document.getElementById('base-salary').value),
-            shifts: {},
-            data: {}
-        };
-        employees.push(newEmp);
-        e.target.reset();
-        saveAndReload();
+            shifts: {}, data: {}
+        });
+        e.target.reset(); save(); renderAll();
     };
 
-    function deleteEmp(id) {
-        if(confirm('ลบพนักงานคนนี้?')) {
-            employees = employees.filter(e => e.id !== id);
-            saveAndReload();
-        }
-    }
-
-    function saveAndReload() {
-        localStorage.setItem(getDBKey(currentBranch), JSON.stringify(employees));
-        renderAll();
-    }
-
-    let currentEdit = { id: null, field: null };
-    function openEdit(id, field) {
-        currentEdit = { id, field };
-        const emp = employees.find(e => e.id === id);
-        const monthKey = `${selectedMonth}-${selectedYear}`;
-        const val = emp.data?.[monthKey]?.[field] || 0;
-        document.getElementById('edit-value').value = val;
-        document.getElementById('edit-modal').classList.remove('hidden-view');
-        document.getElementById('edit-value').focus();
-    }
-
-    function closeModal() { document.getElementById('edit-modal').classList.add('hidden-view'); }
-    function saveModal() {
-        const emp = employees.find(e => e.id === currentEdit.id);
-        const monthKey = `${selectedMonth}-${selectedYear}`;
-        if(!emp.data) emp.data = {};
-        if(!emp.data[monthKey]) emp.data[monthKey] = { ot:0, com:0, case:0, hak:0 };
-        emp.data[monthKey][currentEdit.field] = parseFloat(document.getElementById('edit-value').value) || 0;
-        closeModal();
-        saveAndReload();
-    }
-
-    document.getElementById('month-select').onchange = (e) => { selectedMonth = parseInt(e.target.value); renderAll(); };
-    document.getElementById('year-select').onchange = (e) => { selectedYear = parseInt(e.target.value); renderAll(); };
+    function save() { localStorage.setItem(getDBKey(currentBranch), JSON.stringify(employees)); }
+    function deleteEmp(id) { if(confirm('ลบพนักงาน?')) { employees = employees.filter(e => e.id !== id); save(); renderAll(); } }
     function fmt(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
-    document.getElementById('print-report-btn').onclick = () => window.print();
   </script>
  </body>
 </html>
