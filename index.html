@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบบันทึกตารางเวรและเงินเดือน (รายเดือน)</title>
+  <title>ระบบบันทึกตารางเวรและเงินเดือน</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   
@@ -30,7 +30,7 @@
     td.sticky-1, td.sticky-2, td.sticky-3 { background: white !important; color: #1e293b; border-right: 1px solid #e2e8f0; }
     
     .hidden-view { display: none !important; }
-    .editable-val { cursor: pointer; color: #2563eb; font-weight: bold; text-decoration: underline; text-decoration-style: dotted; }
+    .editable-val { cursor: pointer; color: #2563eb; font-weight: bold; text-decoration: underline;}
 
     @media print {
         .no-print { display: none !important; }
@@ -40,7 +40,7 @@
  <body class="h-full">
 
   <div id="branch-screen" class="h-screen flex flex-col items-center justify-center p-6 bg-slate-100 no-print">
-    <h1 class="text-4xl font-black text-blue-900 mb-12 uppercase tracking-tight">Payroll Manager</h1>
+    <h1 class="text-4xl font-black text-blue-900 mb-12 uppercase tracking-tight">ระบบบันทึกตารางเวรและเงินเดือน</h1>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
         <button onclick="initApp(1)" class="bg-white p-12 rounded-3xl shadow-2xl border-t-8 border-blue-600 hover:scale-105 transition-transform text-center">
             <span class="text-6xl block mb-4">🏢</span>
@@ -84,12 +84,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th class="sticky-1">#</th>
+                        <th class="sticky-1">ลำดับ</th>
                         <th class="sticky-2 text-left">ชื่อ-นามสกุล</th>
                         <th class="sticky-3 text-left">ตำแหน่ง</th>
                         <th id="days-header-row" class="p-0">วันที่</th>
                         <th class="bg-slate-700 px-4">ฐานเงินเดือน</th>
-                        <th class="bg-slate-700 px-4">ค่าจ้าง/เวร</th>
+                        <th class="bg-slate-700 px-4">ค่าจ้าง/วัน</th>
                         <th class="bg-blue-800 px-4 border-l-2 border-blue-400">จำนวนเวร</th>
                         <th class="bg-blue-900 px-4">รวมค่าจ้าง</th>
                         <th class="bg-indigo-600 px-4">โอที</th>
