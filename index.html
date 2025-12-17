@@ -3,34 +3,46 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจัดการพนักงานแยกสาขา</title>
+  <title>ระบบจัดการพนักงาน - แก้ไขการเลือกเวร</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   
   <style>
     body { font-family: 'Sarabun', sans-serif; }
-    .shift-cell { cursor: pointer; user-select: none; font-size: 11px; height: 32px; min-width: 30px; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; }
+    /* ปรับแต่งช่องเวรให้คลิกง่ายขึ้น */
+    .shift-cell { 
+        cursor: pointer; 
+        user-select: none; 
+        font-size: 11px; 
+        height: 35px; 
+        min-width: 30px; 
+        border-right: 1px solid #e5e7eb; 
+        border-bottom: 1px solid #e5e7eb; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        transition: background 0.1s;
+    }
+    .shift-cell:hover { background-color: #f3f4f6; }
     .shift-d { background-color: #fef3c7; color: #92400e; font-weight: 700; }
     .shift-n { background-color: #dbeafe; color: #1e40af; font-weight: 700; }
     .shift-x { background-color: #fecaca; color: #b91c1c; font-weight: 700; }
     .shift-dn { background-color: #a78bfa; color: #ffffff; font-weight: 700; }
-    .shift-empty { background-color: #f9fafb; color: #d1d5db; }
+    .shift-empty { background-color: #ffffff; color: #d1d5db; }
 
     .table-wrapper { overflow: auto; max-height: calc(100vh - 300px); border: 1px solid #e5e7eb; border-radius: 8px; }
-    table { border-collapse: separate; border-spacing: 0; min-width: 2200px; }
+    table { border-collapse: separate; border-spacing: 0; min-width: 2400px; }
     th { position: sticky; top: 0; background-color: #1e3a8a; color: white; z-index: 20; padding: 10px; font-size: 13px; text-align: center; border-right: 1px solid #334155; }
     
-    /* Sticky Columns */
     .sticky-1 { position: sticky; left: 0; z-index: 25; background: #1e3a8a !important; min-width: 60px; }
     .sticky-2 { position: sticky; left: 60px; z-index: 25; background: #1e3a8a !important; min-width: 180px; }
     .sticky-3 { position: sticky; left: 240px; z-index: 25; background: #1e3a8a !important; min-width: 120px; }
     
-    td.sticky-1 { background: #f8fafc !important; }
+    td.sticky-1 { background: #f8fafc !important; color: #64748b; }
     td.sticky-2, td.sticky-3 { background: white !important; color: black !important; }
 
     .hidden-view { display: none !important; }
-    .editable-val { cursor: pointer; transition: background 0.2s; }
-    .editable-val:hover { background-color: #fef9c3; }
+    .editable-val { cursor: pointer; border-bottom: 1px dashed #cbd5e1; }
   </style>
  </head>
  <body class="bg-gray-50 h-full">
@@ -50,54 +62,35 @@
   </div>
 
   <div id="main-app-page" class="hidden-view h-screen flex flex-col overflow-hidden">
-    <div class="p-4 md:p-6 bg-white shadow-sm border-b z-30">
-        <div class="flex justify-between items-start mb-4">
-            <div>
-                <button onclick="location.reload()" class="text-blue-600 text-sm font-bold mb-2 block">← กลับหน้าเลือกสาขา</button>
-                <h1 id="branch-title" class="text-2xl font-bold text-blue-900">เพิ่มพนักงานใหม่</h1>
+    <div class="p-4 bg-white shadow-sm border-b z-30">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-4">
+                <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-sm">🏠</button>
+                <h1 id="branch-title" class="text-xl font-bold text-blue-900">เพิ่มพนักงานใหม่</h1>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="font-bold text-gray-700">เดือน:</span>
-                <select id="month-select" class="border rounded px-3 py-1 font-bold text-blue-800 bg-white"></select>
-                <select id="year-select" class="border rounded px-3 py-1 font-bold text-blue-800 bg-white"></select>
-                <span id="days-count-badge" class="bg-gray-100 px-3 py-1 rounded text-sm font-bold">31 วัน</span>
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-sm">เดือน:</span>
+                <select id="month-select" class="border rounded px-2 py-1 font-bold text-blue-800"></select>
+                <select id="year-select" class="border rounded px-2 py-1 font-bold text-blue-800"></select>
+                <span id="days-count-badge" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs font-bold">31 วัน</span>
             </div>
         </div>
 
-        <form id="add-employee-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-gray-50 p-4 rounded-xl border">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ชื่อ-นามสกุล</label>
-                <input type="text" id="employee-name" required class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ตำแหน่ง</label>
-                <input type="text" id="employee-position" required class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ประเภท</label>
-                <select id="employee-type" class="w-full border p-2 rounded font-bold">
-                    <option value="monthly">รายเดือน (ฐาน/26 วัน)</option>
-                    <option value="daily">รายวัน (ตามเวรจริง)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">เงินเดือน/ค่าจ้างรายวัน</label>
-                <input type="number" id="base-salary" required class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none">
-            </div>
-            <div class="flex items-end">
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-800 shadow-md">เพิ่มพนักงาน</button>
-            </div>
+        <form id="add-employee-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-50 p-3 rounded-lg border">
+            <input type="text" id="employee-name" placeholder="ชื่อ-นามสกุล" required class="border p-2 rounded text-sm outline-none">
+            <input type="text" id="employee-position" placeholder="ตำแหน่ง" required class="border p-2 rounded text-sm outline-none">
+            <select id="employee-type" class="border p-2 rounded text-sm font-bold bg-white">
+                <option value="monthly">รายเดือน</option>
+                <option value="daily">รายวัน</option>
+            </select>
+            <input type="number" id="base-salary" placeholder="เงินเดือน/ค่าจ้าง" required class="border p-2 rounded text-sm outline-none">
+            <button type="submit" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">เพิ่มพนักงาน</button>
         </form>
     </div>
 
-    <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-gray-800">รายชื่อพนักงาน</h2>
-            <button id="print-btn" class="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-emerald-700">ออกรายงาน 📊</button>
-        </div>
-
-        <div class="table-wrapper shadow-2xl bg-white">
-            <table id="main-table">
+    <div class="flex-1 p-4 overflow-hidden flex flex-col">
+        <div class="table-wrapper bg-white shadow-lg">
+            <table>
                 <thead>
                     <tr>
                         <th class="sticky-1">ลำดับ</th>
@@ -127,13 +120,13 @@
     </div>
   </div>
 
-  <div id="edit-modal" class="hidden-view fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
+  <div id="edit-modal" class="hidden-view fixed inset-0 bg-black/60 flex items-center justify-center z-[100]">
     <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <h3 id="modal-title" class="font-bold text-lg mb-4 text-blue-900 border-b pb-2">แก้ไขข้อมูล</h3>
-        <input type="number" id="edit-value" class="w-full border-2 border-blue-500 p-4 rounded-lg text-3xl text-center font-bold mb-6 outline-none">
-        <div class="flex gap-3">
-            <button onclick="closeModal()" class="flex-1 py-3 bg-gray-200 rounded-lg font-bold">ยกเลิก</button>
-            <button onclick="saveModal()" class="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold">บันทึก</button>
+        <input type="number" id="edit-value" class="w-full border-2 border-blue-500 p-3 rounded-lg text-2xl text-center font-bold mb-4 outline-none">
+        <div class="flex gap-2">
+            <button onclick="closeModal()" class="flex-1 py-2 bg-gray-100 rounded font-bold">ยกเลิก</button>
+            <button onclick="saveModal()" class="flex-1 py-2 bg-blue-600 text-white rounded font-bold">บันทึก</button>
         </div>
     </div>
   </div>
@@ -144,22 +137,16 @@
     let selectedMonth = new Date().getMonth() + 1;
     let selectedYear = new Date().getFullYear() + 543;
 
-    const getDBKey = (branch) => `branch_${branch}_db_v20`;
+    const getDBKey = (branch) => `branch_${branch}_db_fixed`;
 
-    // Initialize Selects
+    // Setup Selects
     const mSelect = document.getElementById('month-select');
     const ySelect = document.getElementById('year-select');
-    const months = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-    
-    months.forEach((m, i) => {
-        let opt = document.createElement('option');
-        opt.value = i + 1; opt.textContent = m;
-        mSelect.appendChild(opt);
+    ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."].forEach((m, i) => {
+        let opt = document.createElement('option'); opt.value = i + 1; opt.textContent = m; mSelect.appendChild(opt);
     });
-    for(let y = selectedYear - 1; y <= selectedYear + 2; y++) {
-        let opt = document.createElement('option');
-        opt.value = y; opt.textContent = y;
-        ySelect.appendChild(opt);
+    for(let y = selectedYear - 1; y <= selectedYear + 1; y++) {
+        let opt = document.createElement('option'); opt.value = y; opt.textContent = y; ySelect.appendChild(opt);
     }
     mSelect.value = selectedMonth;
     ySelect.value = selectedYear;
@@ -168,7 +155,7 @@
         currentBranch = branch;
         document.getElementById('branch-selection-page').classList.add('hidden-view');
         document.getElementById('main-app-page').classList.remove('hidden-view');
-        document.getElementById('branch-title').innerHTML = `ระบบจัดการพนักงาน <span class="text-blue-500">สาขาที่ ${branch}</span>`;
+        document.getElementById('branch-title').textContent = `สาขาที่ ${branch}`;
         employees = JSON.parse(localStorage.getItem(getDBKey(currentBranch)) || '[]');
         renderAll();
     }
@@ -177,55 +164,30 @@
         const daysInMonth = new Date(selectedYear - 543, selectedMonth, 0).getDate();
         document.getElementById('days-count-badge').textContent = `${daysInMonth} วัน`;
         
-        // Render Day Headers (1-31)
         let dayHtml = '<div class="flex">';
         for(let i=1; i<=31; i++) {
-            dayHtml += `<div class="w-[30px] text-center border-r border-blue-400 py-2 text-[10px] ${i > daysInMonth ? 'invisible' : ''}">${i}</div>`;
+            dayHtml += `<div class="w-[30px] flex-none text-center border-r border-blue-400 py-2 text-[10px] ${i > daysInMonth ? 'bg-gray-200' : ''}">${i}</div>`;
         }
         document.getElementById('days-header-row').innerHTML = dayHtml + '</div>';
 
         const tbody = document.getElementById('employee-tbody');
         tbody.innerHTML = '';
+        const mKey = `${selectedMonth}-${selectedYear}`;
 
         employees.forEach((emp, idx) => {
-            const monthKey = `${selectedMonth}-${selectedYear}`;
-            const stats = calculateStats(emp, daysInMonth, monthKey);
-            const data = emp.data?.[monthKey] || {};
-            const shifts = emp.shifts?.[monthKey] || Array(31).fill('');
+            const stats = calculateStats(emp, daysInMonth, mKey);
+            const data = emp.data?.[mKey] || {};
+            const shifts = emp.shifts?.[mKey] || Array(31).fill('');
 
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-blue-50 transition border-b";
-
-            // ข้อมูลพนักงาน
             tr.innerHTML = `
-                <td class="sticky-1 p-2 text-center text-xs font-bold border-r text-gray-500">${idx + 1}</td>
-                <td class="sticky-2 p-2 border-r">
-                    <div class="font-bold text-blue-900">${emp.name}</div>
-                    <div class="text-[9px] text-gray-400 uppercase">${emp.type === 'daily' ? 'รายวัน' : 'รายเดือน'}</div>
-                </td>
+                <td class="sticky-1 p-2 text-center text-xs font-bold border-r">${idx + 1}</td>
+                <td class="sticky-2 p-2 border-r font-bold text-blue-900">${emp.name}</td>
                 <td class="sticky-3 p-2 text-xs border-r text-gray-600">${emp.position}</td>
-            `;
-
-            // ช่องลงเวร 1-31
-            const shiftTd = document.createElement('td');
-            shiftTd.className = "p-0";
-            const shiftFlex = document.createElement('div');
-            shiftFlex.className = "flex";
-            for(let i=0; i<31; i++) {
-                const cell = document.createElement('div');
-                cell.className = `shift-cell w-[30px] flex-none ${getShiftClass(shifts[i])} ${i >= daysInMonth ? 'invisible' : ''}`;
-                cell.textContent = shifts[i];
-                cell.onclick = () => toggleShift(emp.id, i, monthKey);
-                shiftFlex.appendChild(cell);
-            }
-            shiftTd.appendChild(shiftFlex);
-            tr.appendChild(shiftTd);
-
-            // ข้อมูลการเงิน (เรียงลำดับตามความต้องการ)
-            tr.innerHTML += `
+                <td class="p-0 border-r"><div class="flex" id="shift-container-${emp.id}"></div></td>
                 <td class="p-2 text-right text-xs font-semibold">${fmt(emp.baseSalary)}</td>
-                <td class="p-2 text-right text-[10px] text-gray-400 italic">${fmt(stats.dailyRate)}</td>
-                <td class="p-2 text-center font-bold text-sm text-blue-800">${stats.totalShifts}</td>
+                <td class="p-2 text-right text-[10px] text-gray-400">${fmt(stats.dailyRate)}</td>
+                <td class="p-2 text-center font-bold text-blue-800">${stats.totalShifts}</td>
                 <td class="p-2 text-right font-bold text-indigo-700 bg-indigo-50">${fmt(stats.totalWage)}</td>
                 <td class="p-2 text-right text-blue-600 font-bold editable-val" onclick="openEdit('${emp.id}', 'ot', 'โอที')">${fmt(data.ot)}</td>
                 <td class="p-2 text-center text-red-600 font-black">${stats.daysX}</td>
@@ -237,12 +199,30 @@
                 <td class="p-2 text-right text-orange-600 font-bold editable-val" onclick="openEdit('${emp.id}', 'fine', 'ผิดกฏ')">${fmt(data.fine)}</td>
                 <td class="p-2 text-right text-orange-600 font-bold editable-val" onclick="openEdit('${emp.id}', 'other', 'อื่นๆ')">${fmt(data.other)}</td>
                 <td class="p-2 text-right font-black text-white ${stats.net >= 0 ? 'bg-green-600' : 'bg-red-600'}">${fmt(stats.net)}</td>
-                <td class="p-2 text-center">
-                    <button onclick="deleteEmp('${emp.id}')" class="text-red-300 hover:text-red-600">ลบ</button>
-                </td>
+                <td class="p-2 text-center"><button onclick="deleteEmp('${emp.id}')" class="text-red-300 hover:text-red-600">✕</button></td>
             `;
             tbody.appendChild(tr);
+
+            const sContainer = document.getElementById(`shift-container-${emp.id}`);
+            for(let i=0; i<31; i++) {
+                const cell = document.createElement('div');
+                cell.className = `shift-cell w-[30px] flex-none ${getShiftClass(shifts[i])} ${i >= daysInMonth ? 'bg-gray-100' : ''}`;
+                cell.textContent = shifts[i];
+                if(i < daysInMonth) cell.onclick = () => toggleShift(emp.id, i, mKey);
+                sContainer.appendChild(cell);
+            }
         });
+    }
+
+    function toggleShift(id, day, mKey) {
+        const emp = employees.find(e => e.id === id);
+        if(!emp.shifts) emp.shifts = {};
+        if(!emp.shifts[mKey]) emp.shifts[mKey] = Array(31).fill('');
+        
+        const cycle = ['', 'D', 'N', 'DN', 'X'];
+        let cur = cycle.indexOf(emp.shifts[mKey][day]);
+        emp.shifts[mKey][day] = cycle[(cur + 1) % cycle.length];
+        saveAndReload();
     }
 
     function calculateStats(emp, daysCount, mKey) {
@@ -254,49 +234,24 @@
             else if(shifts[i] === 'DN') units += 2;
             else if(shifts[i] === 'X') daysX += 1;
         }
-
         const dailyRate = emp.type === 'daily' ? emp.baseSalary : emp.baseSalary / (daysCount - 4);
         const totalWage = units * dailyRate;
         const plus = (data.ot || 0) + (data.com || 0) + (data.case || 0);
         const minus = (data.uniform || 0) + (data.learn || 0) + (data.util || 0) + (data.fine || 0) + (data.other || 0);
-        
         return { totalShifts: units, daysX, dailyRate, totalWage, net: totalWage + plus - minus };
     }
 
-    // Modal System
-    let currentEdit = { id: null, field: null };
-    function openEdit(id, field, label) {
-        currentEdit = { id, field };
-        const emp = employees.find(e => e.id === id);
-        const mKey = `${selectedMonth}-${selectedYear}`;
-        document.getElementById('modal-title').textContent = `แก้ไข ${label}`;
-        document.getElementById('edit-value').value = emp.data?.[mKey]?.[field] || 0;
-        document.getElementById('edit-modal').classList.remove('hidden-view');
-        document.getElementById('edit-value').focus();
-        document.getElementById('edit-value').select();
+    function getShiftClass(s) {
+        if(s === 'D') return 'shift-d';
+        if(s === 'N') return 'shift-n';
+        if(s === 'DN') return 'shift-dn';
+        if(s === 'X') return 'shift-x';
+        return 'shift-empty';
     }
 
-    function saveModal() {
-        const emp = employees.find(e => e.id === currentEdit.id);
-        const mKey = `${selectedMonth}-${selectedYear}`;
-        if(!emp.data) emp.data = {};
-        if(!emp.data[mKey]) emp.data[mKey] = {};
-        emp.data[mKey][currentEdit.field] = parseFloat(document.getElementById('edit-value').value) || 0;
-        closeModal();
-        saveAndReload();
-    }
-
-    function closeModal() { document.getElementById('edit-modal').classList.add('hidden-view'); }
-
-    // Core Actions
-    function toggleShift(id, day, mKey) {
-        const emp = employees.find(e => e.id === id);
-        if(!emp.shifts) emp.shifts = {};
-        if(!emp.shifts[mKey]) emp.shifts[mKey] = Array(31).fill('');
-        const cycle = ['', 'D', 'N', 'DN', 'X'];
-        let curIdx = cycle.indexOf(emp.shifts[mKey][day]);
-        emp.shifts[mKey][day] = cycle[(curIdx + 1) % cycle.length];
-        saveAndReload();
+    function saveAndReload() {
+        localStorage.setItem(getDBKey(currentBranch), JSON.stringify(employees));
+        renderAll();
     }
 
     document.getElementById('add-employee-form').onsubmit = (e) => {
@@ -312,26 +267,29 @@
         e.target.reset(); saveAndReload();
     };
 
-    function saveAndReload() {
-        localStorage.setItem(getDBKey(currentBranch), JSON.stringify(employees));
-        renderAll();
+    let currentEdit = { id: null, field: null };
+    function openEdit(id, field, label) {
+        currentEdit = { id, field };
+        const emp = employees.find(e => e.id === id);
+        const mKey = `${selectedMonth}-${selectedYear}`;
+        document.getElementById('modal-title').textContent = `แก้ไข ${label}`;
+        document.getElementById('edit-value').value = emp.data?.[mKey]?.[field] || 0;
+        document.getElementById('edit-modal').classList.remove('hidden-view');
+        setTimeout(() => document.getElementById('edit-value').select(), 100);
     }
-
-    function deleteEmp(id) { if(confirm('ต้องการลบพนักงานรายนี้?')) { employees = employees.filter(e => e.id !== id); saveAndReload(); } }
+    function saveModal() {
+        const emp = employees.find(e => e.id === currentEdit.id);
+        const mKey = `${selectedMonth}-${selectedYear}`;
+        if(!emp.data) emp.data = {}; if(!emp.data[mKey]) emp.data[mKey] = {};
+        emp.data[mKey][currentEdit.field] = parseFloat(document.getElementById('edit-value').value) || 0;
+        closeModal(); saveAndReload();
+    }
+    function closeModal() { document.getElementById('edit-modal').classList.add('hidden-view'); }
+    function deleteEmp(id) { if(confirm('ลบพนักงาน?')) { employees = employees.filter(e => e.id !== id); saveAndReload(); } }
+    function fmt(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
     
     mSelect.onchange = (e) => { selectedMonth = parseInt(e.target.value); renderAll(); };
     ySelect.onchange = (e) => { selectedYear = parseInt(e.target.value); renderAll(); };
-
-    function getShiftClass(s) {
-        if(s === 'D') return 'shift-d';
-        if(s === 'N') return 'shift-n';
-        if(s === 'DN') return 'shift-dn';
-        if(s === 'X') return 'shift-x';
-        return 'shift-empty';
-    }
-
-    function fmt(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
-    document.getElementById('print-btn').onclick = () => window.print();
   </script>
  </body>
 </html>
